@@ -401,12 +401,28 @@ PRODUCTS = json.loads(r'''{
   },
   "stock-perps": {
     "title": "Stock perpetual futures (HIP-3)",
+    "path": "/v1/perps/stocks",
     "family": "perps",
     "paid_path": "/v1/perps/stocks",
     "free_path": "/v1/free/stock-perps.json",
     "sources": [
       "Hyperliquid public info API (metaAndAssetCtxs dex=xyz/HIP-3 builder DEXes, recentTrades)"
-    ]
+    ],
+    "refresh_promised_sec": 900,
+    "free_probe": "/v1/free/stock-perps.json",
+    "key_fields": [
+      "markets",
+      "as_of",
+      "source"
+    ],
+    "coverage_target": {
+      "markets_teaser": 5
+    },
+    "coverage_paths": {
+      "markets_teaser": "markets"
+    },
+    "validation": "none",
+    "notes": "Paid book refreshes about every 60s. The free probe is the teaser, which is allowed to lag up to 15 minutes, so freshness is scored against that 900s promise using the teaser as_of. A missing or stale as_of is a real freshness result, not a default A."
   },
   "token-verdict": {
     "title": "Token verdict",
@@ -1908,6 +1924,22 @@ def recompute():
     now = time.time()
 
     for pid, meta in PRODUCTS.items():
+        route = meta.get("path") if isinstance(meta.get("path"), str) and str(meta.get("path")).startswith("/") else None
+        if route is None:
+            paid_path = meta.get("paid_path")
+            if isinstance(paid_path, str) and paid_path.startswith("/"):
+                route = paid_path
+        if not route:
+            # A missing path is a rubric gap. Do not turn it into a freshness F or an A.
+            grades[pid] = {
+                "product": pid, "title": meta.get("title"), "path": None,
+                "grade": "ungraded", "score": None,
+                "error": "rubric missing path; product not graded",
+                "freshness_seconds": None, "last_checked": _iso(now),
+                "sources": list(meta.get("sources") or []),
+                "notes": "Ungraded because the rubric has no path. This is not a freshness grade.",
+            }
+            continue
         try:
             probe = meta.get("free_probe")
             code, payload = None, None
@@ -1936,7 +1968,7 @@ def recompute():
                 as_of_ts = now
 
             promised = int(meta.get("refresh_promised_sec") or R30)
-            ust = _stats_for(meta["path"], stats) or {}
+            ust = _stats_for(route, stats) or {}
             lat = ust.get("avg_latency_ms")
             if meta.get("live_fetch"):
                 usage_age = None
@@ -2002,7 +2034,7 @@ def recompute():
                     measured["sites_crawled"] = float(hc["done"])
             cov_score, cov_detail = coverage_score(measured, dict(meta.get("coverage_target") or {}))
 
-            u_rate = _rate_for(meta["path"], rates)
+            u_rate = _rate_for(route, rates)
             u_score, u_detail = uptime_score(u_rate, probe_ok)
             v_score, v_detail = validation_score(meta.get("validation") or "none", ctx)
 
@@ -2023,7 +2055,7 @@ def recompute():
                 "product": pid,
                 "title": meta.get("title") or pid,
                 "family": meta.get("family"),
-                "path": meta.get("path"),
+                "path": route,
                 "grade": grade,
                 "score": score,
                 "as_of": _iso(as_of_ts) if as_of_ts else None,
