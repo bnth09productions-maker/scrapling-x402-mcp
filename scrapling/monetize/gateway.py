@@ -77,6 +77,7 @@ def _paid_lookups_with_quality(base, lookups, cfg):
 
 from .agent_api import FREE_ENDPOINTS, LOOKUPS, build_llms_txt, openapi_mark, paid_lookup_urls, register_agent_api
 from .batch_scrape_openapi import GET_DESCRIPTION, GET_SUMMARY, apply_batch_scrape_openapi
+from .openapi_alias import manifest_endpoints, register_well_known_openapi
 from .harvester import AutonomousHarvester
 from .dataset_listings import LISTINGS as DATASET_LISTINGS, listing_path, openapi_mark_datasets, paid_dataset_urls, register_dataset_listings
 from .ledger import RevenueLedger
@@ -679,7 +680,7 @@ def _build_storefront_html(config: PaymentConfig) -> str:
     <section>
       <h2>For machines</h2>
       <div class="cards">
-        <div class="card"><h3>Discovery</h3><p><a href="/llms.txt">/llms.txt</a> · <a href="/openapi.json">/openapi.json</a> · <a href="/.well-known/agent-card.json">agent card</a> · <a href="/a2a">/a2a</a></p></div>
+        <div class="card"><h3>Discovery</h3><p><a href="/llms.txt">/llms.txt</a> · <a href="/openapi.json">/openapi.json</a> · <a href="/.well-known/openapi.json">/.well-known/openapi.json</a> · <a href="/.well-known/agent-card.json">agent card</a> · <a href="/a2a">/a2a</a></p></div>
         <div class="card"><h3>MCP</h3><p><a href="https://mcp.so/servers/scrapling-x402-data-store" rel="noopener" target="_blank">mcp.so listing</a> · claim <a href="/.well-known/mcprush.com-claim.txt">mcprush claim</a></p></div>
       </div>
     </section>
@@ -2024,6 +2025,7 @@ def create_gateway_app(
                 "marketPulse": "/v1/bundle/market-pulse",
                 "batchScrape": "/v1/batch-scrape",
                 "datasets": "/v1/datasets",
+                **manifest_endpoints(),
                 "depositCredits": "/v1/credits/deposit",
                 "mcp": f"{base}/mcp",
             },
@@ -2068,7 +2070,11 @@ def create_gateway_app(
             "description_for_model": app.description,
             "logo_url": f"{base_url}/logo.png",
             "auth": {"type": "x402_or_bearer", "receiving_wallet": cfg.receiving_address},
-            "api": {"type": "openapi", "url": f"{base_url}/openapi.json"},
+            "api": {
+                "type": "openapi",
+                "url": f"{base_url}/openapi.json",
+                "well_known_url": f"{base_url}/.well-known/openapi.json",
+            },
         }
 
     @app.get("/llms.txt", response_class=PlainTextResponse)
@@ -2986,6 +2992,8 @@ def create_gateway_app(
             spec["x-discovery"] = {"ownershipProofs": proofs}
         spec["info"]["x-logo"] = {"url": f"{base}/logo.png", "altText": SERVICE_NAME}
         return JSONResponse(spec)
+
+    register_well_known_openapi(app, openapi_json)
 
     @app.get("/logo.png", include_in_schema=False)
     @app.get("/favicon.ico", include_in_schema=False)
