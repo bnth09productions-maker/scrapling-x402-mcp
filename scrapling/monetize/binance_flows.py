@@ -546,7 +546,23 @@ DOC14 = ("Per chain: check_1h / check_24h with state (checked_ok = scanned, tran
          "measured_loop_cycles_seconds), plus figure_spreads for 1h and 24h. BSC covers the 1h window only (free BSC RPC limits); its 24h "
          "stays null/not_checked. When any chain's freshness.state is provider_lag (also listed in all_chains.provider_lag_chains), the "
          "response includes top-level action_hint=\"pause\" (and all_chains.action_hint=\"pause\"); the field is omitted when no chain "
-         "is in provider_lag. window_state_24h.partial is unchanged (incomplete windows, e.g. BSC 24h, stay partial independently of lag).")
+         "is in provider_lag. window_state_24h is unchanged (incomplete windows, e.g. BSC 24h, stay partial independently of lag). "
+         "partial (bool) and chains_partial (list) are always present at the top level and under all_chains and mirror window_state_24h; "
+         "they are false and [] when that window is complete. action_hint is still omitted when no chain is in provider_lag.")
+
+
+def visible_partial(snap: Dict[str, Any]) -> Dict[str, Any]:
+    """Top-level partial flags for responses that rebuild a subset of the snapshot.
+
+    Prefers the fields the snapshot wrapper published. Falls back to window_state_24h
+    so an older cached snapshot still shows the same 24h aggregate. Does not add action_hint.
+    """
+    if isinstance(snap, dict) and "partial" in snap and "chains_partial" in snap:
+        return {"partial": bool(snap.get("partial")), "chains_partial": list(snap.get("chains_partial") or [])}
+    ac = (snap or {}).get("all_chains") or {}
+    ws = ac.get("window_state_24h") if isinstance(ac.get("window_state_24h"), dict) else {}
+    chains = list((ws or {}).get("chains_partial") or [])
+    return {"partial": (ws or {}).get("state") == "partial", "chains_partial": chains}
 
 
 def _snapshot() -> Dict[str, Any]:
@@ -717,8 +733,10 @@ LOOKUPS_BF = {
                               "from Binance's publicly identified wallets, USD via Chainlink with input timestamps, as-of time and block per chain.",
                       "query": {}, "props": {}, "required": [],
                       "out": {"as_of": "2026-11-01T12:00:00Z", "action_hint": "pause",
+                              "partial": True, "chains_partial": ["bsc"],
                               "all_chains": {"net_outflow_usd_1h": 0, "net_outflow_usd_24h": 0,
                                              "provider_lag_chains": ["ethereum"], "action_hint": "pause",
+                                             "partial": True, "chains_partial": ["bsc"],
                                              "window_state_24h": {"state": "partial", "chains_partial": ["bsc"]}},
                               "chains": {"ethereum": {"1h": {"token_net_outflow_usd": 0, "by_asset": {"USDT": {"net_outflow": 0}}}}}}},
     "binance-flows-report": {"path": "/v1/lookup/binance-flows/report", "price": PRICE_REPORT, "example_path": "/v1/lookup/binance-flows/report?limit=25",
@@ -790,6 +808,7 @@ def register(app: FastAPI, *, paid: Callable, rate_limit: Callable, lookups: Dic
                                       "adds": "biggest withdrawals with tx/block/time, destinations (other exchanges, bridges), hourly series, wallet sources"},
                            "payment": "x402 v2 USDC (Base, Polygon, Arbitrum, Solana)"},
                "sources": _sources()}
+        out.update(visible_partial(snap))
         # Optional advisory: present only when snapshot flagged provider_lag (see bfx._snapshot).
         if snap.get("action_hint"):
             out["action_hint"] = snap["action_hint"]

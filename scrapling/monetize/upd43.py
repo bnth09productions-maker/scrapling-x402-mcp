@@ -232,8 +232,25 @@ def _wrap_snapshot(orig):
                                 "many are dormant; see activity.last_transfer). A 24h total changes only when a transfer enters or leaves "
                                 "the window or the native balance moves, so it can stay flat for minutes. 1h and 24h can have opposite "
                                 "signs (e.g. a large inflow in the last hour after a larger outflow earlier in the day).")
+        _publish_partial(snap)
         return snap
     return _snapshot
+
+
+def _publish_partial(snap: Dict[str, Any]) -> None:
+    """Mirror the 24h window aggregate where buyers look first.
+
+    window_state_24h is left as upd43 built it. partial/chains_partial are always
+    present (false / [] when the 24h window is complete). action_hint is not touched.
+    """
+    ac = snap.setdefault("all_chains", {})
+    ws = ac.get("window_state_24h") if isinstance(ac.get("window_state_24h"), dict) else {}
+    chains = list((ws or {}).get("chains_partial") or [])
+    partial = (ws or {}).get("state") == "partial"
+    ac["partial"] = partial
+    ac["chains_partial"] = list(chains)
+    snap["partial"] = partial
+    snap["chains_partial"] = list(chains)
 
 
 # ---------------- 3a: receipts ----------------
