@@ -1,0 +1,24 @@
+# PREIMAGE sha256 (box standby snapshot 2026-11-06 ~12:04 CT). Refuse to patch if the live file differs.
+522dde54513a48a5e4b7895ae657f6fc72c188792605bc743c3f5f7b2b226a8b  mpp_bridge.py
+92d1ff4e2a6bd7fdbb63d5aeaf84f0b6591ddcb4b3e4be21bcb55201bfdf5e24  gateway.py
+e00cbe87b054dd6e04bc9e59f4dd7119dea886670881520c751da62e46948970  labels.py
+ad98cb18e23490c3501158b8262ea76da46bba44d2e4fa3328eed4e99a76636a  binance_flows.py
+1db4f943485175754e067596cab4190fbf966986bc1ae4c40ba48cda1eb71b64  upd43.py
+5a00686fecfceca4bce302a2774e09032aac0c46831ad32508ca1415e3a5ccbc  quality.py
+
+# POSTIMAGE
+## URGENT (gateway is urgent-only, not the later OpenAPI edit)
+f0758ab9ed847de32ff5cc6cf4ccb4f96f2d7daa8ceee6511d8732fe3958c660  mpp_bridge.py
+397d6596a392432eeee30d0288b56fc1731647c6d31bf8e63329ef57494ec56a  gateway.py
+## FOLLOWUP-01 labels
+a60a4684fc56c1d31c5538a5e36ebb8999a5b5fd1405254d4ea2557d9ebefdcf  labels.py
+## FOLLOWUP-02 binance
+a4bbdad5204152bfb56813b29406f0ceb2c68154a66a0c9e56ea5bb37dd0d849  binance_flows.py
+6b6dd8d270366ba94b89503ebbb6274824d1147e3e9e446c8ad37075459fee98  upd43.py
+## FOLLOWUP-03 openapi. batch_scrape_openapi.py is NEW (no preimage). gateway.py.OPENAPI-ONLY is the standby preimage plus the OpenAPI patch and NOT the MPP patch.
+b051975aca7545991931659e0f70455b2e1049bfdfb6efaef9220420930bd4d6  batch_scrape_openapi.py
+b856ff2ac2f4e92b14de9384110c4bb12fa6eb02082cce1bb739df8ee1eff10a  gateway.py.OPENAPI-ONLY
+## FOLLOWUP-04 quality
+baa243745ad9d67a8ca41b40330928f018a192e333a0175a01cac5971762b181  quality.py
+## gateway.py with urgent MPP patch AND OpenAPI patch (git tree)
+7be20569132964f2b153a5ba0a8abb501902a4dfa1649efd6a00f87c2ae05a8d  scrapling/monetize/gateway.py

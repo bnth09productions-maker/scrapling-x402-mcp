@@ -1,0 +1,15 @@
+Command: PYTHONPATH=/workspace python3 -m unittest discover -s tests/monetize -v
+Result: Ran 15 tests in 0.006s — OK
+(test_mpp_scope.py is not a unittest.TestCase; it is run as a script.)
+
+Command: PYTHONPATH=/workspace python3 tests/monetize/test_mpp_scope.py
+Result: mpp scope ok 5 routes; charge+session; cross-route rejected
+EXIT:0
+
+Patch apply check: urgent gateway diff and openapi gateway diff each apply to the standby preimage.
+Applying urgent then openapi produces the git gateway.py (sha256 7be20569132964f2b153a5ba0a8abb501902a4dfa1649efd6a00f87c2ae05a8d).
+patch -R of the urgent diffs restores the preimage bytes.
+patch -R of the openapi gateway diff on the openapi-only file restores the preimage bytes.
+labels, binance_flows, upd43, and quality diffs each apply to the preimage and match the git file.
+
+No payment, no Tempo broadcast, no production curl (no access to production).
