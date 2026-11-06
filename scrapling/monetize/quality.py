@@ -2132,6 +2132,14 @@ def get_all():
         return _pack()
 
 
+def _sample_checks():
+    try:
+        from .accuracy_checks import current
+        return current()
+    except Exception:
+        return None
+
+
 def _pack():
     summary = dict(_state.get("summary") or {})
     summary["tombstones_total"] = _tombstone_count()
@@ -2140,6 +2148,7 @@ def _pack():
         "summary": summary,
         "rubric": _state.get("rubric"),
         "products": _state.get("grades"),
+        "sample_checks": _sample_checks(),
         "endpoints": {"all": "/v1/quality", "one": "/v1/quality/{product}", "human": "/quality",
                       "tombstones": "/v1/tombstones", "tombstones_check": "/v1/tombstones/check"},
     }
@@ -2150,7 +2159,9 @@ def get_one(product):
     g = (data.get("products") or {}).get(product)
     if not g:
         return None
-    return {"as_of": data.get("as_of"), "rubric": data.get("rubric"), "product": g}
+    checks = (data.get("sample_checks") or {}).get("products") or {}
+    return {"as_of": data.get("as_of"), "rubric": data.get("rubric"), "product": g,
+            "sample_checks": checks.get(product)}
 
 
 def quality_block(product):
@@ -2211,6 +2222,11 @@ def _html_page(data):
         )
     wrow = " · ".join(f"{k} {int(v*100)}%" for k, v in WEIGHTS.items())
     body_rows = "".join(trs)
+    try:
+        from .accuracy_checks import html_section
+        sample_html = html_section(data.get("sample_checks"))
+    except Exception:
+        sample_html = ""
     return f"""<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -2261,6 +2277,7 @@ footer {{ margin-top:40px; padding-top:18px; border-top:1px solid var(--border);
 <section><h2>Products</h2><div class="scroll"><table>
 <thead><tr><th>Product</th><th>Grade</th><th>Freshness</th><th>Coverage</th><th>Sources</th><th>Last checked</th></tr></thead>
 <tbody>{body_rows}</tbody></table></div></section>
+{sample_html}
 <section><h2>Rubric</h2><div class="card">
 <p>Score = 0.30·freshness + 0.25·completeness + 0.20·coverage + 0.15·uptime + 0.10·validation.</p>
 <ul>
@@ -2292,6 +2309,11 @@ def _loop():
             log.exception("quality recompute failed: %s", e)
             with _lock:
                 _state["last_error"] = str(e)
+        try:
+            from .accuracy_checks import maybe_run
+            maybe_run()
+        except Exception as e:
+            log.warning("accuracy sample skipped: %s", e)
         time.sleep(INTERVAL_MIN * 60)
 
 
@@ -2311,6 +2333,7 @@ def register(app, *, rate_limit, free_endpoints=None, lookups=None):
         free_endpoints["/v1/quality"] = (
             "Free quality grades for every product: letter A-F + 0-100 score from measured freshness, "
             "completeness, coverage, uptime and validation. Includes published rubric weights. "
+            "sample_checks is a separate small free-source sample and is not the letter grade. "
             "Human page at /quality; per-product at /v1/quality/{product}."
         )
         free_endpoints["/v1/quality/{product}"] = (
