@@ -11,7 +11,7 @@ import logging
 log = logging.getLogger("scrapling.labels")
 
 import json, os, re, threading, time, urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urljoin, urlparse
 
@@ -105,19 +105,85 @@ def _cached_fetch(name: str, url: str) -> (Any, str):
     return open(p, "rb").read(), ts
 
 
-def _add(idx, counts, addr, chains, label, entity, category, source, url, conf, as_of):
+_DATE_ONLY = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+_ISO_INSTANT = re.compile(
+    r"^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$"
+)
+
+
+def _source_confirmed(value: Any) -> Optional[str]:
+    """A timestamp the source itself published, or None.
+
+    File mtimes, index rebuild time, and request time are not confirmation.
+    Callers must pass only a source-authored value. Date-only values stay
+    date-only so a missing clock is not invented. A time without a zone is
+    rejected rather than assumed UTC.
+    """
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    date_only = _DATE_ONLY.fullmatch(text)
+    if date_only:
+        try:
+            datetime(int(date_only.group(1)), int(date_only.group(2)), int(date_only.group(3)))
+        except ValueError:
+            return None
+        return text
+    instant = _ISO_INSTANT.fullmatch(text)
+    if not instant:
+        return None
+    base = f"{instant.group(1)}T{instant.group(2)}{instant.group(3) or ''}"
+    zone = instant.group(4)
+    if zone == "Z":
+        return base + "Z"
+    sign = 1 if zone[0] == "+" else -1
+    hours, minutes = zone[1:].split(":")
+    # Normalize to UTC. The source published an offset, so the instant is known.
+    try:
+        dt = datetime.fromisoformat(base).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    dt = dt - sign * timedelta(hours=int(hours), minutes=int(minutes))
+    return dt.strftime("%Y-%m-%dT%H:%M:%S") + (instant.group(3) or "") + "Z"
+
+
+def _row_confirmed(row: Any) -> Optional[str]:
+    """Source-authored confirmation fields on a label row. Not file generated_at."""
+    if not isinstance(row, dict):
+        return None
+    for key in ("last_confirmed", "confirmed_at", "confirmed", "listed_at", "source_date", "date"):
+        found = _source_confirmed(row.get(key))
+        if found:
+            return found
+    return None
+
+
+def _latest_confirmed(rows: List[Dict[str, Any]]) -> Optional[str]:
+    found = [r.get("last_confirmed") for r in rows if isinstance(r, dict) and r.get("last_confirmed")]
+    if not found:
+        return None
+    return max(found)
+
+
+def _add(idx, counts, addr, chains, label, entity, category, source, url, conf, as_of, confirmed_at=None):
     k = _key(addr)
     if not k or len(k) < 20:
         return
+    confirmed = _source_confirmed(confirmed_at)
     lst = idx.setdefault(k, [])
     for e in lst:
         if e["entity"] == entity and e["category"] == category:
             for c in chains:
                 if c and c not in e["chains"]:
                     e["chains"].append(c)
+            if confirmed and (not e.get("last_confirmed") or confirmed > e["last_confirmed"]):
+                e["last_confirmed"] = confirmed
             return
-    lst.append({"label": label, "entity": entity, "category": category, "chains": [c for c in chains if c], "source": source,
-                "source_url": url, "confidence": conf, "as_of": as_of, "block": NA})
+    row = {"label": label, "entity": entity, "category": category, "chains": [c for c in chains if c], "source": source,
+           "source_url": url, "confidence": conf, "as_of": as_of, "block": NA, "last_confirmed": confirmed}
+    lst.append(row)
     counts[category] = counts.get(category, 0) + 1
 
 
@@ -135,7 +201,7 @@ def build() -> None:
             cat = "exchange_" + ("deposit" if "deposit" in kind else "cold_wallet" if "cold" in kind else "hot_wallet" if "hot" in kind
                                  else "reserve_wallet" if "reserve" in kind else "wallet")
             _add(idx, counts, r.get("address"), [r.get("chain")], r.get("name") or r.get("exchange"), r.get("exchange"), cat, src,
-                 r.get("source_url") or "https://github.com/dawsbot/eth-labels", conf, ts)
+                 r.get("source_url") or "https://github.com/dawsbot/eth-labels", conf, ts, _row_confirmed(r))
     except Exception:
         pass
     # 2. Binance flow wallets
@@ -154,7 +220,8 @@ def build() -> None:
         for iid, inc in ht.INCIDENTS.items():
             for r in inc.get("addresses") or []:
                 _add(idx, counts, r["address"], [inc.get("chain", "ethereum")], r["label"], inc["name"], "hacker_exploit_wallet",
-                     r.get("source", ""), (inc.get("references") or [None])[0], r.get("confidence", "medium"), inc.get("date"))
+                     r.get("source", ""), (inc.get("references") or [None])[0], r.get("confidence", "medium"), inc.get("date"),
+                     inc.get("date"))
         kc = {"mixer": "mixer", "bridge": "bridge", "dex": "dex_router", "defi": "defi_protocol", "cex": "exchange_hot_wallet"}
         for a, r in ht.LABELS.items():
             _add(idx, counts, a, ["ethereum"], r["label"], r.get("exchange") or r["label"].split(" (")[0], kc.get(r.get("kind"), r.get("kind")),
@@ -166,7 +233,8 @@ def build() -> None:
         for ch, c in getattr(hm, "CHAINS_BASE", hm.CHAINS).items():
             for r in c.get("addresses") or []:
                 _add(idx, counts, r["address"], [ch], r["label"], "Binance hot wallet exploit (2026-10-29)", "hacker_exploit_wallet",
-                     r.get("source", ""), hm.REFS[0] if hm.REFS else None, r.get("confidence", "medium"), "2026-10-30")
+                     r.get("source", ""), hm.REFS[0] if hm.REFS else None, r.get("confidence", "medium"), "2026-10-30",
+                     "2026-10-30")
         for a, r in hm.TRON_LABELS.items():
             _add(idx, counts, a, ["tron"], r["label"], r["label"], r.get("kind", "protocol"), r.get("source", ""), None, "high", _now())
     except Exception:
@@ -185,7 +253,7 @@ def build() -> None:
         rows = c[1] if isinstance(c, list) else (c.get("rows") or [])
         for r in rows:
             _add(idx, counts, r.get("contract"), ["gnosis"], r.get("token"), "RealT", "tokenized_real_estate_contract",
-                 "RealT RealTokenWrapper registry (on-chain)", r.get("explorer"), "high", r.get("as_of"))
+                 "RealT RealTokenWrapper registry (on-chain)", r.get("explorer"), "high", r.get("as_of"), _row_confirmed(r))
     except Exception:
         pass
     # 5. OFAC SDN sanctioned addresses
@@ -203,7 +271,7 @@ def build() -> None:
         for r in json.loads(raw or b"[]"):
             _add(idx, counts, r.get("address"), ["ethereum"], (r.get("comment") or "Reported scam/phishing address")[:160],
                  "Scam / phishing (reported)", "scam_phishing", "MyEtherWallet ethereum-lists darklist (MIT)",
-                 "https://github.com/MyEtherWallet/ethereum-lists", "medium", r.get("date") or ts)
+                 "https://github.com/MyEtherWallet/ethereum-lists", "medium", r.get("date") or ts, r.get("date"))
     except Exception:
         pass
     # 7. DefiLlama protocol token addresses
@@ -258,7 +326,7 @@ def build() -> None:
                 ent = tag.split(":")[0].strip() if tag else (label or "eth-labels")
                 _add(idx, counts, addr, [ch], tag or label or "eth-labels", ent, cat,
                      "dawsbot/eth-labels (MIT License)", "https://github.com/dawsbot/eth-labels",
-                     "high" if is_ex else "medium", ts)
+                     "high" if is_ex else "medium", ts, _row_confirmed(r))
                 n_add += 1
             counts["eth_labels_rows_loaded"] = n_add
     except Exception:
@@ -319,14 +387,16 @@ def lookup(address: str) -> Dict[str, Any]:
     if sp:
         return {"address": a, "match": True, "label": sp, "entity": None, "category": "special", "chains": ["all"],
                 "confidence": "high", "source": "protocol specification (reserved/system address)", "source_url": None,
-                "as_of": _ix["as_of"], "corpus_as_of": _ix["as_of"], "labeled_addresses": len(_ix["idx"]),
+                "as_of": _ix["as_of"], "corpus_as_of": _ix["as_of"], "last_confirmed": None,
+                "labeled_addresses": len(_ix["idx"]),
                 "block": NA, "data_as_of": DAO(_ix["as_of"]),
-                "labels": [{"label": sp, "category": "special", "confidence": "high"}],
+                "labels": [{"label": sp, "category": "special", "confidence": "high", "last_confirmed": None}],
                 "note": "Reserved or system address: nobody controls it as a wallet. Not an exchange, protocol or person."}
     hits = _ix["idx"].get(_key(a)) or []
     if not hits:
         return {"address": a, "match": False, "label": "unknown", "entity": None, "category": "unknown", "chains": [],
                 "confidence": None, "labels": [], "as_of": _ix["as_of"], "corpus_as_of": _ix["as_of"],
+                "last_confirmed": None,
                 "labeled_addresses": len(_ix["idx"]), "block": NA, "data_as_of": DAO(_ix["as_of"]),
                 "note": "No public label for this address in our sources. Unknown is not a safety verdict."}
     rank = {"high": 0, "medium": 1, "low": 2}
@@ -335,7 +405,35 @@ def lookup(address: str) -> Dict[str, Any]:
     return {"address": a, "match": True, "label": top["label"], "entity": top["entity"], "category": top["category"],
             "chains": top["chains"], "confidence": top["confidence"], "source": top["source"], "source_url": top["source_url"],
             "as_of": _ix["as_of"], "label_as_of": top["as_of"], "corpus_as_of": _ix["as_of"],
+            "last_confirmed": _latest_confirmed(hs),
             "labeled_addresses": len(_ix["idx"]), "block": NA, "data_as_of": DAO(_ix["as_of"]), "labels": hs}
+
+
+def lookup_many(addresses: List[str]) -> List[Dict[str, Any]]:
+    """One lookup per address. Invalid addresses stay in the list and are not confirmed."""
+    res = []
+    for raw in addresses:
+        try:
+            res.append(lookup(raw))
+        except ValueError as exc:
+            res.append({"address": raw, "error": str(exc), "match": False, "last_confirmed": None})
+    return res
+
+
+def free_label_view(record: Dict[str, Any], base: str) -> Dict[str, Any]:
+    """Free sampler. last_confirmed is the source timestamp, never corpus_as_of."""
+    out = {"address": record["address"], "match": record["match"], "entity": record["entity"], "category": record["category"],
+           "as_of": record.get("corpus_as_of") or record["as_of"], "corpus_as_of": record.get("corpus_as_of") or _ix["as_of"],
+           "last_confirmed": record.get("last_confirmed"),
+           "labeled_addresses": record.get("labeled_addresses") or len(_ix["idx"]),
+           "block": NA, "data_as_of": DAO(record.get("corpus_as_of") or record["as_of"]), "free": True,
+           "upgrade": {"note": "Paid: label, chains, confidence, source link, every matching label; bulk 50 per call",
+                       "endpoint": base + "/v1/wallet-label?address=" + record["address"], "price_usd": P_LABEL,
+                       "bulk_endpoint": base + "/v1/wallet-label/bulk", "bulk_price_usd": P_BULK}}
+    for key in ("status", "valid_until", "superseded_by", "tombstone_id", "tombstones_available", "tombstones_route", "prior_tombstone_id"):
+        if key in record:
+            out[key] = record[key]
+    return out
 
 
 def coverage() -> Dict[str, Any]:
@@ -461,13 +559,13 @@ LOOKUPS_LB = {
     "wallet-label": {"path": "/v1/wallet-label", "price": P_LABEL, "example_path": "/v1/wallet-label?address=0x28c6c06298d514db089934071355e5743bf21d60",
         "desc": "Wallet-to-entity lookup: who an address belongs to (exchange hot/cold/deposit wallet, hacker/exploit wallet, OFAC-sanctioned, "
                 "bridge, mixer, DEX router, protocol token, tokenized stock or real estate token, reported scam). Returns label, entity, category, "
-                "chains, source + link, confidence, as_of (block not_applicable: off-chain label). Sources: exchange proof-of-reserves lists, "
+                "chains, source + link, confidence, as_of (block not_applicable: off-chain label), last_confirmed (source-published confirmation time, or null when the source did not publish one; never the request time or a file refresh). Sources: exchange proof-of-reserves lists, "
                 "MIT label sets, OFAC SDN, MEW darklist, DefiLlama, our hack tracker. No match returns label 'unknown' (still a valid answer)",
         "query": {"address": "0x28c6c06298d514db089934071355e5743bf21d60"},
         "props": {"address": {"type": "string", "description": "EVM 0x address, BTC, Tron or Solana address"}}, "required": ["address"],
         "out": {"address": "0x28c6...", "match": True, "label": "Binance 14", "entity": "Binance", "category": "exchange_hot_wallet",
                 "chains": ["ethereum"], "confidence": "high", "source": "...", "source_url": "...", "as_of": "2026-11-02T22:00:00Z",
-                "block": NA, "labels": []}},
+                "last_confirmed": None, "block": NA, "labels": []}},
     "wallet-label-bulk": {"path": "/v1/wallet-label/bulk", "price": P_BULK, "example_path": "/v1/wallet-label/bulk?addresses=0x28c6c06298d514db089934071355e5743bf21d60,0x7C8601d4645b93cea45F71e118A729332e6B5CA0",
         "desc": "Bulk wallet-to-entity labels: up to 50 comma-separated addresses in one call, same fields as /v1/wallet-label per address, plus matched count",
         "query": {"addresses": "0x28c6c06298d514db089934071355e5743bf21d60,0x7C8601d4645b93cea45F71e118A729332e6B5CA0"},
@@ -535,12 +633,7 @@ def register(app: FastAPI, *, paid: Callable, rate_limit: Callable, lookups: Dic
             al = [a.strip() for a in (addresses or "").split(",") if a.strip()]
             if not al or len(al) > 50:
                 raise HTTPException(400, detail="addresses: 1-50 comma-separated; payment NOT settled (no charge).")
-            res = []
-            for a in al:
-                try:
-                    res.append(await run_in_threadpool(lookup, a))
-                except ValueError as e:
-                    res.append({"address": a, "error": str(e)})
+            res = await run_in_threadpool(lookup_many, al)
             return {"count": len(res), "matched": sum(1 for r in res if r.get("match")), "results": res, "as_of": _now(), "block": NA, "data_as_of": DAO(_now())}
         return await paid(request, "wallet-label-bulk", live)
 
@@ -569,17 +662,7 @@ def register(app: FastAPI, *, paid: Callable, rate_limit: Callable, lookups: Dic
         except ValueError as e:
             raise HTTPException(400, detail=str(e))
         base = str(request.base_url).rstrip("/").replace("http://", "https://")
-        out = {"address": r["address"], "match": r["match"], "entity": r["entity"], "category": r["category"],
-                "as_of": r.get("corpus_as_of") or r["as_of"], "corpus_as_of": r.get("corpus_as_of") or _ix["as_of"],
-                "labeled_addresses": r.get("labeled_addresses") or len(_ix["idx"]),
-                "block": NA, "data_as_of": DAO(r.get("corpus_as_of") or r["as_of"]), "free": True,
-                "upgrade": {"note": "Paid: label, chains, confidence, source link, every matching label; bulk 50 per call",
-                            "endpoint": base + "/v1/wallet-label?address=" + r["address"], "price_usd": P_LABEL,
-                            "bulk_endpoint": base + "/v1/wallet-label/bulk", "bulk_price_usd": P_BULK}}
-        for k in ("status", "valid_until", "superseded_by", "tombstone_id", "tombstones_available", "tombstones_route", "prior_tombstone_id"):
-            if k in r:
-                out[k] = r[k]
-        return out
+        return free_label_view(r, base)
 
     @app.get("/v1/free/company", tags=["free"], summary="Free: company/project name, website, X handle, category")
     async def co_free(request: Request, q: Optional[str] = Query(None)):
