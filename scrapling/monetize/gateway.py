@@ -76,6 +76,7 @@ def _paid_lookups_with_quality(base, lookups, cfg):
     return out
 
 from .agent_api import FREE_ENDPOINTS, LOOKUPS, build_llms_txt, openapi_mark, paid_lookup_urls, register_agent_api
+from .batch_scrape_openapi import GET_DESCRIPTION, GET_SUMMARY, apply_batch_scrape_openapi
 from .harvester import AutonomousHarvester
 from .dataset_listings import LISTINGS as DATASET_LISTINGS, listing_path, openapi_mark_datasets, paid_dataset_urls, register_dataset_listings
 from .ledger import RevenueLedger
@@ -2537,7 +2538,7 @@ def create_gateway_app(
                 "payment_settlement": settlement}
         return JSONResponse(body, headers=verifier.build_payment_response_header(settlement or {}))
 
-    @app.get("/v1/batch-scrape", include_in_schema=False)
+    @app.get("/v1/batch-scrape", summary=GET_SUMMARY, description=GET_DESCRIPTION)
     async def batch_scrape_get(request: Request) -> JSONResponse:
         return _payment_required(request, "batch_scrape:probe", cfg.get_price("static_scrape"), "static_scrape",
                                  "Use POST with JSON {\"urls\": [...]} (max 100). Batch web scraping: up to 100 URLs as clean Markdown, JSON-LD and tables; priced per page", _batch_bazaar(),
@@ -2962,7 +2963,8 @@ def create_gateway_app(
             "Pay per call with x402 v2 (USDC on Base, Polygon, Arbitrum or Solana mainnet) or MPP (USDC.e on Tempo; WWW-Authenticate: Payment challenge with intent=charge and, when enabled, intent=session; retry with Authorization: Payment). x402 is settled only after valid data is ready; MPP settles on submit. No charge on failure: payment is settled only after valid data is ready. "
             "An unpaid call to a paid route returns without payment a 402 challenge (PAYMENT-REQUIRED header) with the amount and payTo; "
             "a retry carrying the payment proof returns the data. POST /v1/scrape {\"url\": ...} scrapes a page into "
-            "Markdown, JSON-LD and tables; POST /v1/batch-scrape takes up to 100 urls; GET /v1/datasets lists "
+            "Markdown, JSON-LD and tables; POST /v1/batch-scrape takes up to 100 urls in a JSON body; "
+            "GET /v1/batch-scrape takes no urls and always returns 402 pointing at that POST; GET /v1/datasets lists "
             "datasets (free previews of up to 10 rows at /v1/datasets/<dataset_id>/preview, ids from GET /v1/datasets) and GET /v1/datasets/{id}/buy?format=json "
             "buys one. FREE: /v1/free/feeds, /v1/free/crypto/top10, /v1/free/defi/top-yields. Single lookups: "
             "/v1/lookup/coin?q= $0.001, /v1/lookup/protocol?q= $0.001, /v1/lookup/yields?chain=&token= $0.002, "
@@ -2978,6 +2980,7 @@ def create_gateway_app(
             "(misses return 404, no charge). Prices: clean text $0.003; full scrape $0.001-$0.025 per page ($0.005 typical); datasets $0.01 (up to 10 rows), "
             "$0.05 (up to 100), $0.49 (up to 1,000), $1.99 (up to 10,000), max $4.99."
         )
+        apply_batch_scrape_openapi(paths)
         proofs = _ownership_proofs()
         if proofs:
             spec["x-discovery"] = {"ownershipProofs": proofs}
