@@ -2129,7 +2129,7 @@ def create_gateway_app(
                                      "Trial code is invalid or has no calls left."), None
         _auth = request.headers.get("authorization", "")
         if MppDoor.is_mpp(_auth):
-            ok, info, err = mppd.verify(_auth, required_usd, description)
+            ok, info, err = mppd.verify(_auth, required_usd, description, http_request=request)
             if not ok:
                 return _payment_required(request, resource, required_usd, tier_id, description, bazaar, err), None
             st = {"payment_id": f"mpp:{info['tx_hash']}", "recipient_address": cfg.receiving_address,
@@ -2348,7 +2348,7 @@ def create_gateway_app(
             headers_402["PAYMENT-REQUIRED"] = b64encode(json_dumps_bytes(lean)).decode("ascii")
         except Exception:
             pass
-        _www = mppd.challenge_header(required_usd, description)
+        _www = mppd.challenge_header(required_usd, description, http_request=request)
         if _www:
             headers_402 = dict(headers_402)
             headers_402["WWW-Authenticate"] = _www

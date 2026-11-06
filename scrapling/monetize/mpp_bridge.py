@@ -367,13 +367,65 @@ class MppDoor:
             raise box["e"]
         return box.get("r")
 
-    def _request(self, authorization: Optional[str] = None, url: Optional[str] = None):
+    def _request(self, authorization: Optional[str] = None, url: Optional[str] = None, method: str = "GET", route: Optional[str] = None):
         from mpp.server import Request
 
         headers = {}
         if authorization:
             headers["Authorization"] = authorization
-        return Request(method="GET", url=url or f"https://{self.realm}/", headers=headers)
+        return Request(method=method or "GET", url=url or f"https://{self.realm}/", headers=headers, route=route)
+
+    async def _engine_request(self, http_request: Any = None, authorization: Optional[str] = None):
+        """Build the pympp request whose scope is signed into the challenge.
+
+        Scope follows pympp's own framework binding (``to_request`` / ``Request.scope``):
+        ``http_method``, route template when the framework matched one, the
+        percent-encoded path as ``resource``, and the raw query string when present.
+        Challenge issuance and verification both use this builder, so the signed
+        scope and the scope checked on replay are the same request. Authorization
+        is attached only for verification; a rejected credential must not be
+        re-parsed while a fresh challenge is being issued.
+        """
+        if http_request is None:
+            return self._request(authorization)
+        method = "GET"
+        url = f"https://{self.realm}/"
+        route = None
+        try:
+            from mpp.server.decorator import to_request
+
+            base = await to_request(http_request, read_body=False)
+            if getattr(base, "method", None):
+                method = base.method
+            if getattr(base, "url", None):
+                url = base.url
+            route = getattr(base, "route", None)
+        except Exception as err:
+            log.warning("MPP scope fell back to the request URL path: %s", err)
+            method = str(getattr(http_request, "method", None) or "GET")
+            url_obj = getattr(http_request, "url", None)
+            path = getattr(url_obj, "path", None) if url_obj is not None else None
+            if not isinstance(path, str) or not path.startswith("/"):
+                path = "/"
+            query = ""
+            if url_obj is not None:
+                raw_q = getattr(url_obj, "query", None)
+                if isinstance(raw_q, bytes):
+                    query = raw_q.decode("latin-1")
+                elif isinstance(raw_q, str):
+                    query = raw_q
+            url = f"https://{self.realm}{path}" + (f"?{query}" if query else "")
+            scope = getattr(http_request, "scope", None)
+            if isinstance(scope, dict):
+                matched = getattr(scope.get("route"), "path", None)
+                if isinstance(matched, str) and matched:
+                    route = matched
+        headers = {}
+        if authorization:
+            headers["Authorization"] = authorization
+        from mpp.server import Request
+
+        return Request(method=method, url=url, headers=headers, route=route)
 
     def _handler(self, usd: float, description: Optional[str] = None):
         """Return a pympp handler: charge alone, or charge+session composed."""
@@ -388,16 +440,27 @@ class MppDoor:
         session_h = self._mpp.session(amount=amount, unit_type="request", description=desc)
         return compose(charge_h, session_h)
 
-    def challenge_header(self, usd: float, description: Optional[str] = None) -> Optional[str]:
+    def challenge_header(
+        self, usd: float, description: Optional[str] = None, http_request: Any = None
+    ) -> Optional[str]:
         if not self.enabled or usd <= 0 or self._mpp is None:
             return None
         try:
             if self._api == "v20":
-                res = self._run(self._handler(usd, description)(self._request()))
+                async def _issue() -> Any:
+                    # Same handler (charge, or charge+session) and the same request
+                    # scope for every intent this response advertises.
+                    return await self._handler(usd, description)(
+                        await self._engine_request(http_request, None)
+                    )
+
+                res = self._run(_issue())
                 ch = getattr(res, "challenge", None)
                 if ch is None:
                     return None
                 headers = getattr(ch, "headers", None) or {}
+                # httpx joins repeated WWW-Authenticate values with ", ".
+                # pympp's client splits that back into charge and session.
                 return headers.get("www-authenticate") or headers.get("WWW-Authenticate")
             ch = self._run(
                 self._mpp.charge(
@@ -416,14 +479,29 @@ class MppDoor:
         return bool(authorization) and authorization.strip().lower().startswith("payment ")
 
     def verify(
-        self, authorization: str, usd: float, description: Optional[str] = None
+        self,
+        authorization: str,
+        usd: float,
+        description: Optional[str] = None,
+        http_request: Any = None,
     ) -> Tuple[bool, Dict[str, Any], Optional[str]]:
-        """Returns (paid, info, error). Charge: funds already moved. Session: voucher accepted."""
+        """Returns (paid, info, error). Charge: funds already moved. Session: voucher accepted.
+
+        ``http_request`` is the same object passed to :meth:`challenge_header`. The
+        credential's echoed ``_mppx_scope`` must match this request (method, path,
+        route template, query). A credential issued for another path or query is
+        rejected before settlement.
+        """
         if not self.enabled or self._mpp is None:
             return False, {}, "MPP payments are not enabled on this server."
         try:
             if self._api == "v20":
-                res = self._run(self._handler(usd, description)(self._request(authorization)))
+                async def _check() -> Any:
+                    return await self._handler(usd, description)(
+                        await self._engine_request(http_request, authorization)
+                    )
+
+                res = self._run(_check())
                 if getattr(res, "status", None) != 200:
                     return False, {}, "MPP credential rejected (wrong amount, expired, replayed or unpaid)."
                 credential = getattr(res, "credential", None)
