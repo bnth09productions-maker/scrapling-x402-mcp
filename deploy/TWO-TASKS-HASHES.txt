@@ -1,0 +1,10 @@
+PREIMAGE is the already-installed five-fix postimage. Stop if the live file differs.
+gateway.py preimage 7be20569132964f2b153a5ba0a8abb501902a4dfa1649efd6a00f87c2ae05a8d
+quality.py preimage baa243745ad9d67a8ca41b40330928f018a192e333a0175a01cac5971762b181
+openapi_alias.py preimage NONE (new file)
+accuracy_checks.py preimage NONE (new file)
+
+POSTIMAGE 1d360fc0224d016b01ab54c7400d90fcf34b4d72d822038ca03c5418ce91dba9  01-openapi-alias/files/gateway.py
+POSTIMAGE 7554bab1855739485ce66be06b2d8b902fffde1616489ef7a1cb51b04466a72e  01-openapi-alias/files/openapi_alias.py
+POSTIMAGE eacdecfee7acee7fe008768b1b54f8c5a4afbc3f5adac78ae86d8d58fccf8d29  02-accuracy-checks/files/quality.py
+POSTIMAGE 139ff34cfc35d864e77205dde739e2d17e992d4b9a30bca9fc6f0180943a15ec  02-accuracy-checks/files/accuracy_checks.py

@@ -1,0 +1,12 @@
+python3 -m unittest discover -s tests/monetize -v
+Ran 24 tests — OK
+Includes test_openapi_alias (both URLs, 200, application/json, equal schema, no redirect loop, canonical path kept)
+and test_accuracy_checks (match, mismatch, skip, error, stale, null rate, rate bounds, banned/private refusal, scheduler, HTML escape, grades unchanged).
+
+python3 tests/monetize/test_mpp_scope.py
+exit 0
+
+Alias gateway.py.diff applies to preimage 7be20569132964f2b153a5ba0a8abb501902a4dfa1649efd6a00f87c2ae05a8d and matches postimage 1d360fc0224d016b01ab54c7400d90fcf34b4d72d822038ca03c5418ce91dba9.
+Accuracy quality.py.diff applies to preimage baa243745ad9d67a8ca41b40330928f018a192e333a0175a01cac5971762b181 and matches postimage eacdecfee7acee7fe008768b1b54f8c5a4afbc3f5adac78ae86d8d58fccf8d29.
+
+No production access, no payment, no deploy.
