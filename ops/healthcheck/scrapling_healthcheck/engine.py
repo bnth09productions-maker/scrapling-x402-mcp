@@ -10,6 +10,21 @@ from typing import Any, Dict, List, Tuple
 
 from .alerts import event_for, write_outbox
 from .checks import Check, Runner, reject_banned_config
+
+
+def summarize(checks: List[Check]) -> Tuple[str, int]:
+    """Exit 1 is a real failure. Exit 3 is a coverage gap. Exit 4 is a known stall.
+
+    Exit 0 is a complete pass: every check passed. A known stall does not page
+    by itself; worsening past its window is a failure.
+    """
+    if any(item.fails_run() for item in checks):
+        return "fail", 1
+    if any(item.status == "not_configured" for item in checks):
+        return "incomplete", 3
+    if any(item.status == "watch" for item in checks):
+        return "degraded", 4
+    return "ok", 0
 from .http_client import HttpClient
 from .redact import redact
 from .state_store import RunLock, load_state, save_state
@@ -86,7 +101,7 @@ def _write_reports(directory: str, payload: Dict[str, Any], keep: int) -> Tuple[
         "",
         f"Overall: **{payload['overall']}** (exit {payload['exit_code']}).",
         "",
-        "Sample checks are route assertions. A known stall inside its configured window is watch, not a pass and not a new failure. Missing evidence is not success.",
+        "Each row is its own status. Overall incomplete means an optional local path is unset (a coverage gap, not a pass). Required evidence that is absent is missing and fails the run. A known stall inside its window is watch; older than that window is fail.",
         "",
         "| Check | Status | Summary |",
         "|---|---|---|",
@@ -131,21 +146,23 @@ def execute(config: Dict[str, Any], root: str, client: HttpClient | None = None,
         )
         checks = Runner(config, http, now).run()
         events = _events(previous, checks, now)
-        failing = [item for item in checks if item.fails_run()]
-        exit_code = 1 if failing else 0
+        overall, exit_code = summarize(checks)
         finished = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now))
+        rows = [
+            {"check_id": item.check_id, "status": item.status, "summary": redact(item.summary),
+             "fingerprint": item.fingerprint}
+            for item in checks
+        ]
         payload = {
             "finished_at": finished,
-            "overall": "fail" if exit_code else "ok",
+            "overall": overall,
             "exit_code": exit_code,
+            "public_pass": [row["check_id"] for row in rows if row["status"] == "pass" and not row["check_id"].startswith("local:")],
+            "coverage_gaps": [row["check_id"] for row in rows if row["status"] == "not_configured"],
             "base_url": config.get("base_url"),
-            "checks": [
-                {"check_id": item.check_id, "status": item.status, "summary": redact(item.summary),
-                 "fingerprint": item.fingerprint}
-                for item in checks
-            ],
+            "checks": rows,
             "events": events,
-            "note": "Local report only. Webhook delivery happens only when SCRAPLING_HEALTH_WEBHOOK_URL is set.",
+            "note": "Webhook posts failure events only, and only when SCRAPLING_HEALTH_WEBHOOK_URL is https. Recovery is opt-in. Coverage gaps stay in this report.",
         }
         json_path, md_path = _write_reports(paths["reports"], payload, int(config.get("keep_reports") or 48))
         if events:

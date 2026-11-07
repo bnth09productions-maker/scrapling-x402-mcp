@@ -58,6 +58,14 @@ def _skip(check_id: str, summary: str) -> Check:
     return Check(check_id, "not_configured", summary, {"code": "not_configured"})
 
 
+def _unconfigured(check_id: str, spec: Dict[str, Any], label: str) -> Optional[Check]:
+    if spec.get("path"):
+        return None
+    if spec.get("required"):
+        return _missing(check_id, label + " is required but the path is not configured")
+    return _skip(check_id, label + " path is not configured; coverage gap, not a pass")
+
+
 def money(value: float) -> str:
     text = f"{value:.4f}".rstrip("0").rstrip(".")
     return text
@@ -359,9 +367,10 @@ class Runner:
 
     def request_log(self) -> Check:
         spec = (self.cfg.get("local") or {}).get("request_log") or {}
+        gap = _unconfigured("local:request_log", spec, "request log")
+        if gap is not None:
+            return gap
         path = spec.get("path")
-        if not path:
-            return _skip("local:request_log", "request log path not configured")
         if not os.path.isfile(path):
             return _missing("local:request_log", "request log database is missing")
         try:
@@ -429,9 +438,10 @@ def _mpp_resources(header: str) -> List[str]:
 
 
 def _file_age_check(check_id: str, spec: Dict[str, Any], now: float, label: str) -> Check:
+    gap = _unconfigured(check_id, spec, label)
+    if gap is not None:
+        return gap
     path = spec.get("path")
-    if not path:
-        return _skip(check_id, label + " path not configured")
     if not os.path.isfile(path):
         return _missing(check_id, label + " file is missing")
     try:
@@ -455,9 +465,10 @@ def _file_age_check(check_id: str, spec: Dict[str, Any], now: float, label: str)
 
 
 def _sqlite_age_check(check_id: str, spec: Dict[str, Any], now: float, sql: str, label: str) -> Check:
+    gap = _unconfigured(check_id, spec, label)
+    if gap is not None:
+        return gap
     path = spec.get("path")
-    if not path:
-        return _skip(check_id, label + " path not configured")
     if not os.path.isfile(path):
         return _missing(check_id, label + " database is missing")
     try:

@@ -8,6 +8,7 @@
   "log_dir": "var/logs",
   "outbox_dir": "var/outbox",
   "keep_reports": 48,
+  "interval_seconds": 14400,
   "free_max_age_seconds": 7200,
   "hacks_max_age_seconds": 1800,
   "free": [

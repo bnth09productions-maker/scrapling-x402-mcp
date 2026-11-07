@@ -2,20 +2,35 @@
 from __future__ import annotations
 
 import base64
+import http.client
 import json
 import os
 import sqlite3
+import subprocess
+import sys
 import tempfile
+import time
 import unittest
+import urllib.error
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 NOW = datetime(2026, 11, 7, 23, 0, 30, tzinfo=timezone.utc).timestamp()
 
-from scrapling_healthcheck.alerts import post_webhook, write_outbox
-from scrapling_healthcheck.checks import Runner
-from scrapling_healthcheck.engine import execute, load_config
-from scrapling_healthcheck.http_client import HttpResponse
+from scrapling_healthcheck.alerts import post_webhook, webhook_request, webhook_sends, write_outbox
+from scrapling_healthcheck.checks import Check, Runner
+from scrapling_healthcheck.daemon import (
+    DEFAULT_INTERVAL,
+    StopFlag,
+    append_log,
+    interval_of,
+    pid_path,
+    run_loop,
+    stop_daemon,
+    write_pid,
+)
+from scrapling_healthcheck.engine import _events, execute, load_config, summarize
+from scrapling_healthcheck.http_client import HttpClient, HttpResponse, same_site
 from scrapling_healthcheck.state_store import RunLock
 
 
@@ -130,11 +145,11 @@ class HealthTests(unittest.TestCase):
                                       {"priceUsd": usd, "accepts": [{"scheme": "exact"}]})
         cfg = config_for(root)
         code = execute(cfg, root, client=FakeClient(routes), now=now)
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 3)
         outbox = os.path.join(root, "outbox", "events.jsonl")
         self.assertFalse(os.path.exists(outbox))
         code = execute(cfg, root, client=FakeClient(routes), now=now + 10)
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 3)
         routes[("GET", "/docs")] = (200, {"content-type": "text/html"}, "catalog without the pulse price")
         code = execute(cfg, root, client=FakeClient(routes), now=now + 20)
         self.assertEqual(code, 1)
@@ -149,7 +164,7 @@ class HealthTests(unittest.TestCase):
         self.assertEqual(len(second), 1)
         routes[("GET", "/docs")] = (200, {"content-type": "text/html"}, "see /v1/bundle/market-pulse ($0.001) in the catalog")
         code = execute(cfg, root, client=FakeClient(routes), now=now + 40)
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 3)
         with open(outbox, encoding="utf-8") as handle:
             third = handle.read().strip().splitlines()
         self.assertEqual(len(third), 2)
@@ -262,7 +277,7 @@ class HealthTests(unittest.TestCase):
             full[("GET", extra)] = (402, {"www-authenticate": _mpp(extra)}, {"priceUsd": usd, "accepts": [{}]})
         cfg = config_for(root)
         code = execute(cfg, root, client=FakeClient(full), now=stamp)
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 3)
         with open(os.path.join(root, "outbox", "events.jsonl"), encoding="utf-8") as handle:
             self.assertIn("corrupt", handle.read())
         lock = RunLock(os.path.join(root, "state", "held.lock"), stale_seconds=100)
@@ -289,7 +304,245 @@ class HealthTests(unittest.TestCase):
         path = os.path.join(os.path.dirname(__file__), "..", "config", "healthcheck.json")
         cfg = load_config(path)
         self.assertEqual(cfg["paid_402"][0]["usd"], 0.001)
+        counterparty = next(row for row in cfg["paid_402"] if row["id"] == "counterparty")
+        self.assertEqual(counterparty["usd"], 0.004)
+        self.assertEqual(cfg["interval_seconds"], 14400)
         self.assertIsNone(cfg["local"]["demand_radar"]["path"])
+
+
+class AcceptanceTests(unittest.TestCase):
+    def test_lookalike_host_port_scheme_and_redirect_drops_secrets(self):
+        base = "https://scraplingdata.xyz/v1/bundle/market-pulse"
+        self.assertFalse(same_site(base, "https://evilscraplingdata.xyz/v1/bundle/market-pulse"))
+        self.assertFalse(same_site(base, "https://scraplingdata.xyz.evil.com/"))
+        self.assertTrue(same_site(base, "https://scraplingdata.xyz/other"))
+        self.assertTrue(same_site(base, "https://status.scraplingdata.xyz/other"))
+        self.assertFalse(same_site(base, "http://scraplingdata.xyz/other"))
+        self.assertFalse(same_site(base, "https://scraplingdata.xyz:8443/other"))
+        self.assertFalse(same_site(base, "https://user:pass@scraplingdata.xyz/other"))
+
+        class Opener:
+            def __init__(self):
+                self.seen = []
+
+            def __call__(self, req, timeout=None):
+                names = {key.lower(): value for key, value in req.header_items()}
+                self.seen.append((req.full_url, req.get_method(), names))
+                if req.full_url.endswith("/paid"):
+                    hdrs = http.client.HTTPMessage()
+                    hdrs["Location"] = "https://evilscraplingdata.xyz/steal"
+                    raise urllib.error.HTTPError(req.full_url, 302, "Found", hdrs, None)
+                if req.full_url.endswith("/same"):
+                    hdrs = http.client.HTTPMessage()
+                    hdrs["Location"] = "https://scraplingdata.xyz/landed"
+                    raise urllib.error.HTTPError(req.full_url, 302, "Found", hdrs, None)
+                return _Body(req.full_url)
+
+        opener = Opener()
+        client = HttpClient(2, 1000, "ScraplingHealthCheck/1.0", opener=opener)
+        rejected = client.request(
+            "GET", "https://scraplingdata.xyz/paid",
+            headers={"PAYMENT-SIGNATURE": "not-a-valid-payment", "Authorization": "Bearer secret"},
+        )
+        self.assertEqual(rejected.error, "redirect rejected")
+        self.assertEqual(len(opener.seen), 1)
+        self.assertNotIn("authorization", opener.seen[0][2])
+        self.assertIn("payment-signature", opener.seen[0][2])
+
+        followed = client.request(
+            "GET", "https://scraplingdata.xyz/same",
+            headers={"PAYMENT-SIGNATURE": "not-a-valid-payment"},
+        )
+        self.assertEqual(followed.status, 200)
+        self.assertEqual(followed.final_url, "https://scraplingdata.xyz/landed")
+        self.assertEqual(opener.seen[2][0], "https://scraplingdata.xyz/landed")
+        self.assertNotIn("payment-signature", opener.seen[2][2])
+        self.assertNotIn("authorization", opener.seen[2][2])
+
+    def test_optional_gap_is_incomplete_and_required_absence_fails(self):
+        root = tempfile.mkdtemp()
+        routes, now = _store_routes()
+        cfg = config_for(root)
+        code = execute(cfg, root, client=FakeClient(routes), now=now)
+        self.assertEqual(code, 3)
+        report = _latest_report(root)
+        self.assertEqual(report["overall"], "incomplete")
+        public = [row for row in report["checks"] if not row["check_id"].startswith("local:")]
+        self.assertTrue(public)
+        self.assertTrue(all(row["status"] == "pass" for row in public))
+        gaps = [row for row in report["checks"] if row["check_id"].startswith("local:")]
+        self.assertEqual(report["coverage_gaps"], [row["check_id"] for row in gaps])
+        self.assertTrue(all(row["status"] == "not_configured" for row in gaps))
+        self.assertTrue(all("coverage gap" in row["summary"] for row in gaps))
+
+        required = config_for(root)
+        required["local"]["sync_evidence"]["required"] = True
+        code = execute(required, root, client=FakeClient(routes), now=now + 1)
+        self.assertEqual(code, 1)
+        report = _latest_report(root)
+        sync = next(row for row in report["checks"] if row["check_id"] == "local:sync")
+        self.assertEqual(sync["status"], "missing")
+        self.assertEqual(report["overall"], "fail")
+        homepage = next(row for row in report["checks"] if row["check_id"] == "homepage")
+        self.assertEqual(homepage["status"], "pass")
+
+        missing_file = config_for(root)
+        missing_file["local"]["demand_radar"]["path"] = os.path.join(root, "absent.db")
+        code = execute(missing_file, root, client=FakeClient(routes), now=now + 2)
+        self.assertEqual(code, 1)
+        report = _latest_report(root)
+        radar = next(row for row in report["checks"] if row["check_id"] == "local:demand_radar")
+        self.assertEqual(radar["status"], "missing")
+
+    def test_webhook_failures_only_and_stall_does_not_hide_worsening(self):
+        self.assertTrue(webhook_sends("failure", False))
+        self.assertFalse(webhook_sends("recovery", False))
+        self.assertTrue(webhook_sends("recovery", True))
+        self.assertFalse(webhook_sends("change", True))
+        req = webhook_request("https://hooks.example/health", {
+            "id": "1", "kind": "failure", "check_id": "paid:x", "summary": "down", "at": "t",
+        }, {"X-Hook-Token": "local-test"})
+        names = {key.lower() for key, _value in req.header_items()}
+        self.assertIn("x-hook-token", names)
+        self.assertNotIn("authorization", names)
+        self.assertNotIn("grok", req.full_url)
+
+        os.environ["SCRAPLING_HEALTH_WEBHOOK_URL"] = "https://hooks.example/health"
+        os.environ.pop("SCRAPLING_HEALTH_WEBHOOK_RECOVERY", None)
+        os.environ.pop("SCRAPLING_HEALTH_WEBHOOK_AUTH_HEADER", None)
+        os.environ.pop("SCRAPLING_HEALTH_WEBHOOK_AUTH_VALUE", None)
+        sent = []
+
+        def sender(url, event, auth):
+            sent.append((event["kind"], dict(auth)))
+            return "delivered"
+
+        path = os.path.join(tempfile.mkdtemp(), "events.jsonl")
+        events = [
+            {"id": "f", "kind": "failure", "check_id": "paid:x", "summary": "down", "at": "t"},
+            {"id": "r", "kind": "recovery", "check_id": "paid:x", "summary": "up", "at": "t"},
+            {"id": "c", "kind": "change", "check_id": "local:sync", "summary": "watch", "at": "t"},
+        ]
+        try:
+            write_outbox(path, events, sender=sender)
+            self.assertEqual([item[0] for item in sent], ["failure"])
+            with open(path, encoding="utf-8") as handle:
+                lines = [json.loads(line) for line in handle]
+            self.assertEqual([line["kind"] for line in lines], ["failure", "recovery", "change"])
+            self.assertEqual([line["webhook"] for line in lines], ["delivered", "filtered", "filtered"])
+            os.environ["SCRAPLING_HEALTH_WEBHOOK_RECOVERY"] = "1"
+            write_outbox(path, events, sender=sender)
+            self.assertEqual([item[0] for item in sent], ["failure", "failure", "recovery"])
+            os.environ["SCRAPLING_HEALTH_WEBHOOK_AUTH_HEADER"] = "X-Hook-Token"
+            write_outbox(path, events[:1], sender=sender)
+            with open(path, encoding="utf-8") as handle:
+                last = json.loads(handle.read().strip().splitlines()[-1])
+            self.assertEqual(last["webhook"], "auth_incomplete")
+            self.assertEqual(len(sent), 3)
+        finally:
+            os.environ.pop("SCRAPLING_HEALTH_WEBHOOK_URL", None)
+            os.environ.pop("SCRAPLING_HEALTH_WEBHOOK_RECOVERY", None)
+            os.environ.pop("SCRAPLING_HEALTH_WEBHOOK_AUTH_HEADER", None)
+            os.environ.pop("SCRAPLING_HEALTH_WEBHOOK_AUTH_VALUE", None)
+
+        now = NOW
+        stall = Check("local:demand_radar", "watch", "inside window", {"code": "known_stall"})
+        self.assertEqual(_events({"checks": {}}, [stall], now), [])
+        again = _events({"checks": {"local:demand_radar": {"fingerprint": stall.fingerprint}}}, [stall], now + 10)
+        self.assertEqual(again, [])
+        worsened = Check("local:demand_radar", "fail", "older than the window", {"code": "worsened"})
+        failure = _events({"checks": {"local:demand_radar": {"fingerprint": stall.fingerprint}}}, [worsened], now + 20)
+        self.assertEqual(failure[0]["kind"], "failure")
+        repeated = _events({"checks": {"local:demand_radar": {"fingerprint": worsened.fingerprint}}}, [worsened], now + 30)
+        self.assertEqual(repeated, [])
+        recurrent = _events({"checks": {"local:demand_radar": {"fingerprint": "pass|ok"}}}, [worsened], now + 30)
+        self.assertEqual(recurrent[0]["kind"], "failure")
+        self.assertNotEqual(failure[0]["id"], recurrent[0]["id"])
+        self.assertEqual(summarize([Check("homepage", "pass", "ok"), stall]), ("degraded", 4))
+        self.assertEqual(summarize([Check("homepage", "pass", "ok"), Check("local:sync", "not_configured", "gap")]), ("incomplete", 3))
+        self.assertEqual(summarize([worsened]), ("fail", 1))
+
+    def test_daemon_waits_full_interval_and_stop_is_bounded(self):
+        self.assertEqual(DEFAULT_INTERVAL, 14400)
+        self.assertEqual(interval_of({}, None), 14400)
+        with self.assertRaises(ValueError):
+            interval_of({}, 1)
+        calls = []
+        stop = StopFlag()
+
+        def fake_execute(config, root):
+            calls.append(time.monotonic())
+            if len(calls) == 2:
+                stop.stop = True
+            return 3
+
+        run_loop({}, ".", 0.05, stop, fake_execute, slice_s=0.01)
+        self.assertEqual(len(calls), 2)
+        self.assertGreaterEqual(calls[1] - calls[0], 0.04)
+
+        root = tempfile.mkdtemp()
+        proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+        path = pid_path(root)
+        write_pid(path, proc.pid)
+        try:
+            self.assertEqual(stop_daemon(path, wait_seconds=5), "stopped")
+            self.assertIsNotNone(proc.wait(timeout=5))
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=5)
+        self.assertFalse(os.path.exists(path))
+        log = os.path.join(root, "daemon.log")
+        append_log(log, "x" * 50, max_bytes=40, backups=2)
+        append_log(log, "next", max_bytes=40, backups=2)
+        self.assertTrue(os.path.exists(log + ".1"))
+
+
+class _Body:
+    def __init__(self, url):
+        self.status = 200
+        self.headers = http.client.HTTPMessage()
+        self._url = url
+
+    def read(self, n):
+        return b"ok"
+
+    def geturl(self):
+        return self._url
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+def _store_routes():
+    routes, now = healthy(NOW)
+    routes[("GET", "/v1/free/wallet-label?address=0x0000000000000000000000000000000000000000")] = routes.pop(
+        ("GET", "/v1/free/wallet-label")
+    )
+    for extra, usd in (
+        ("/v1/bundle/defi-intel", 0.001),
+        ("/v1/lookup/address-poisoning", 0.0009),
+        ("/v1/check/counterparty", 0.004),
+        ("/v1/perps/stocks", 0.003),
+        ("/v1/lookup/binance-flows", 0.02),
+        ("/v1/lookup/binance-flows/report", 0.25),
+        ("/v1/pass/day", 2.0),
+    ):
+        routes[("GET", extra)] = (
+            402, {"content-type": "application/json", "www-authenticate": _mpp(extra)},
+            {"priceUsd": usd, "accepts": [{"scheme": "exact"}]},
+        )
+    return routes, now
+
+
+def _latest_report(root: str):
+    directory = os.path.join(root, "reports")
+    name = sorted(item for item in os.listdir(directory) if item.endswith(".json"))[-1]
+    with open(os.path.join(directory, name), encoding="utf-8") as handle:
+        return json.load(handle)
 
 
 if __name__ == "__main__":
