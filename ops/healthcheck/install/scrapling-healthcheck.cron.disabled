@@ -1,0 +1,2 @@
+# DISABLED until the once command is verified. Every 4 hours.
+# 0 */4 * * * cd /workspace/store-health-checker && PYTHONPATH=. /usr/bin/python3 -m scrapling_healthcheck once --config config/healthcheck.json
