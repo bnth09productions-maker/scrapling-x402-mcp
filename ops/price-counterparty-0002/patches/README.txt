@@ -1,4 +1,4 @@
-Prefer apply_counterparty_price.py. It edits one unique literal per anchor and aborts if that literal is missing or repeated.
+Prefer apply_counterparty_price.py. It preflights all six anchors before it writes, and a failed preflight leaves every target byte unchanged. Do not apply these diffs one file at a time. A partial tree is a mixed state, and the script will refuse to finish it.
 
 patches/gateway.py.diff applies only to gateway.py whose sha256 is
 1d360fc0224d016b01ab54c7400d90fcf34b4d72d822038ca03c5418ce91dba9

@@ -1,5 +1,8 @@
 Counterparty check $0.004 -> $0.002. These hashes identify bytes. They are not a license to copy a whole file onto a host.
 
+Do not use the earlier zip sha256 19407c0f10e9d75438b2e04a8a6964088f80e5f0675a4ff552f34389c4b3871c.
+That apply script wrote earlier files before a later anchor abort. This script preflights all six anchors first.
+
 Route: GET /v1/check/counterparty
 Lookup key: counterparty-check
 Not a route: /v1/wallet/counterparty
