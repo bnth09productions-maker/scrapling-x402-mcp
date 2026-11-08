@@ -82,6 +82,7 @@ from .harvester import AutonomousHarvester
 from .dataset_listings import LISTINGS as DATASET_LISTINGS, listing_path, openapi_mark_datasets, paid_dataset_urls, register_dataset_listings
 from .ledger import RevenueLedger
 from .marketplace import DatasetMarketplace
+from .link_compat import register_link_compat
 from .mcp_server import register_mcp_routes
 from .sales_engine import SalesOutreachEngine
 from .smart_scraper import SmartScraper
@@ -2976,7 +2977,7 @@ def create_gateway_app(
             "/v1/lookup/coin?q= $0.001, /v1/lookup/protocol?q= $0.001, /v1/lookup/yields?chain=&token= $0.002, "
             "/v1/lookup/pool?pool_id= $0.001, /v1/lookup/polymarket?q= $0.005, /v1/lookup/token-risk?address= $0.005, "
             "/v1/ecom/product?q= $0.01 (E-commerce price + stock lookup across 180+ Shopify stores, 30-day history; free teaser /v1/free/ecom), /v1/ecom/changes $0.02 (price drops, restocks, sell-outs, new products), /v1/ecom/snapshot?category=|brand=|domain= $0.05, /v1/ecom/catalog?domain= $0.25 (full store catalog), "
-            "/v1/regime/now $0.02 (Market Regime: risk-on/off score 0-100, label, why, components; free delayed teaser /v1/free/regime), /v1/regime/full $0.05 (all metrics, 30-day history, methodology), /v1/dd/report?chain=&address= $1.00 (Crypto Due-Diligence Agent: full report on a token or wallet), /v1/dd/quick?chain=&address= $0.25 (due-diligence quick check), /v1/trust/agent?chain=&address= $0.04 (Trust Bundle: allow/caution/block + trust score for an agent, wallet or token), /v1/check/counterparty?chain=&address= $0.002 (safe/caution/block for a wallet or token), /v1/wallet/profile?chain=&address= $0.005 (wallet label + activity score), /v1/token/holders?chain=solana&address= $0.005 (holder concentration) "
+            "/v1/regime/now $0.02 (Market Regime: risk-on/off score 0-100, label, why, components; free delayed teaser /v1/free/regime), /v1/regime/full $0.05 (all metrics, 30-day history, methodology), /v1/dd/report?chain=&address= $1.00 (Crypto Due-Diligence Agent: full report on a token or wallet), /v1/dd/quick?chain=&address= $0.25 (due-diligence quick check), /v1/trust/agent?chain=&address= $0.04 (Trust Bundle: allow/caution/block + trust score for an agent, wallet or token), /v1/check/counterparty?chain=&address= $0.004 (safe/caution/block for a wallet or token), /v1/wallet/profile?chain=&address= $0.005 (wallet label + activity score), /v1/token/holders?chain=solana&address= $0.005 (holder concentration) "
             "(go/caution/avoid verdict). Bundle: /v1/bundle/market-pulse $0.001 (top coins by rank with Chainlink prices, volume leaders, on-chain DeFi TVL, "
             "DEX volume, heatmap in one call). Page to clean text: /v1/scrape/text?url= $0.003. "
             "Dataset listings (optional q, limit, offset, format=json|csv; catalog free at /v1/free/datasets): "
@@ -3017,6 +3018,7 @@ def create_gateway_app(
         return HTMLResponse(svg, media_type="image/svg+xml")
 
     register_mcp_routes(app, _public_base_url)
+    register_link_compat(app)
 
     @app.get("/docs/swagger", include_in_schema=False)
     async def swagger_docs() -> HTMLResponse:

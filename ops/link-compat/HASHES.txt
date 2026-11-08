@@ -1,0 +1,17 @@
+Proved by copying git file 1f3bc22 gateway.py and the 2026-11-06 box snapshot mcp_server.py, then running apply_link_compat.py. Those postimage hashes apply only when the preimage bytes match. A live file with the same anchors and different surrounding bytes gets a different postimage, which the script prints. Do not overwrite a file to force these hashes.
+
+gateway.py
+  preimage  1d360fc0224d016b01ab54c7400d90fcf34b4d72d822038ca03c5418ce91dba9
+  postimage 29b3a6eccde32729b0d99701be890c666aaa1b64cf27a615dc73f9c007a9e362
+  anchors   from .mcp_server import register_mcp_routes
+            register_mcp_routes(app, _public_base_url)
+  The counterparty guidance line is not an anchor. It stays $0.004.
+
+mcp_server.py is not in the git checkout. Snapshot reference:
+  preimage  b64b90e61babe2bf311c8e49646b8fc103a3f889e050ed536e533e6fc1a46f72
+  postimage 1dc1789f5158a30d12b03ee42947024e536eae73238b85ad3766f85a838efcc1
+  anchors   the json_loads import, the mcp_endpoint try block, and mcp_no_stream's Allow POST line
+
+New files, copied only if missing or already identical:
+  link_compat.py  50a1cb808f4de4d3380b14f7f91276dd65a16d515b0d2eb1865552c9d7ce8c80
+  mcp_method.py   0ad46a489ce07676f92dfbf20b364e83bf86f2d5bc637b5e8ec79c020e0d6a90
