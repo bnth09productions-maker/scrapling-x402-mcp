@@ -1,0 +1,3 @@
+# Example only. The box has no crontab, so this file is not a schedule and it does not survive reboot.
+# On a host that has cron, every 4 hours, after the daemon-or-once command is accepted:
+# 0 */4 * * * cd /workspace/store-health-checker && PYTHONPATH=. /usr/bin/python3 -m scrapling_healthcheck once --config config/healthcheck.json

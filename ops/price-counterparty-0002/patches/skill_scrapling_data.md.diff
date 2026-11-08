@@ -1,0 +1,9 @@
+--- a/scrapling/monetize/skill_scrapling_data.md
++++ b/scrapling/monetize/skill_scrapling_data.md
+@@ -28,5 +28,5 @@
+ |---|---|---|
+ | Should I trust this outside agent, wallet or token? Trust Bundle: allow/caution/block + 0-100 trust score + reasons (base, ethereum, solana) | `/v1/trust/agent?chain=base&address=0x...` | $0.04 |
+-| Is it safe to pay or trade with this wallet or token? safe/caution/block + 0-100 score + reasons (ethereum, base, solana) | `/v1/check/counterparty?chain=ethereum&address=0x...` | $0.004 |
++| Is it safe to pay or trade with this wallet or token? safe/caution/block + 0-100 score + reasons (ethereum, base, solana) | `/v1/check/counterparty?chain=ethereum&address=0x...` | $0.002 |
+ | Should I trade this token? go/caution/avoid + liquidity, holders, taxes, contract flags (base, ethereum, bsc, arbitrum, polygon, optimism, avalanche, solana) | `/v1/token/verdict?chain=base&address=0x...` | $0.005 |
+ | Is a Base token a scam/honeypot? 0-100 risk score | `/v1/lookup/token-risk/{address}` | $0.005 |

@@ -1,0 +1,11 @@
+[Unit]
+Description=Scrapling Data health check (one shot)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/workspace/store-health-checker
+Environment=PYTHONPATH=/workspace/store-health-checker
+ExecStart=/usr/bin/python3 -m scrapling_healthcheck once --config config/healthcheck.json
+# Example only. The box has no systemd --user, so this unit is not installed and does not survive reboot.
+# Optional webhook: set SCRAPLING_HEALTH_WEBHOOK_URL in a user environment file you manage.
+# Do not put the URL in this unit file.

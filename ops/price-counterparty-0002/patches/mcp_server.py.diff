@@ -1,0 +1,11 @@
+--- a/scrapling/monetize/mcp_server.py
++++ b/scrapling/monetize/mcp_server.py
+@@ -401,6 +401,6 @@
+                  {"chain": {"type": "string", "enum": ["base", "ethereum", "solana"]},
+                   "address": {"type": "string", "description": "Agent wallet, token contract or Solana mint"}}, ["address"]),
+-    _lookup_tool("counterparty_check", "Counterparty Check ($0.004)",
+-                 "PAID $0.004 USDC. Before paying or trading: send one wallet or token and get safe / caution / block, a "
++    _lookup_tool("counterparty_check", "Counterparty Check ($0.002)",
++                 "PAID $0.002 USDC. Before paying or trading: send one wallet or token and get safe / caution / block, a "
+                  "0-100 safety score and reasons. Auto-detects token vs wallet; combines token contract checks "
+                  "(impostor symbol, owner, proxy, Solana mint/freeze authority), holder concentration, wallet profile, "
