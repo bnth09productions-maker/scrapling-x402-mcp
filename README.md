@@ -18,6 +18,16 @@ claude mcp add --transport http scrapling-data https://scraplingdata.xyz/mcp
 
 ## Links
 - Website: https://scraplingdata.xyz
+- Registry metadata: `server.json` (version 0.6.2) includes the icon at https://scraplingdata.xyz/logo.png (400x400 PNG)
+
+## Local MCP server
+The package serves the documented tool list and forwards `tools/call` to https://scraplingdata.xyz/mcp. Prices and payment stay on that server.
+
+```
+pip install -e ".[dev]"
+python -m scrapling_mcp
+python -m unittest tests.test_registry
+```
 - OpenAPI: https://scraplingdata.xyz/openapi.json
 - llms.txt: https://scraplingdata.xyz/llms.txt
 - x402scan: https://www.x402scan.com/server/1b76cf53-526e-48df-a7e7-2c777e14354a

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.bnth09productions-maker/scrapling-x402-store",
+  "description": "Live crypto, DeFi, stock and web data plus datasets for agents. Pay per call with x402. No API key.",
+  "title": "Scrapling x402 Data Store",
+  "repository": {
+    "url": "https://github.com/bnth09productions-maker/scrapling-x402-mcp",
+    "source": "github",
+    "id": "1427868680"
+  },
+  "version": "0.6.2",
+  "websiteUrl": "https://scraplingdata.xyz",
+  "icons": [
+    {
+      "src": "https://scraplingdata.xyz/logo.png",
+      "mimeType": "image/png",
+      "sizes": ["400x400"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://scraplingdata.xyz/mcp"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+[project]
+name = "scrapling-x402-mcp"
+version = "0.6.2"
+description = "Scrapling x402 Data Store MCP server: documented tools, same prices and payment flow."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["jsonschema>=4.20"]
+
+[project.scripts]
+scrapling-x402-mcp = "scrapling_mcp.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["scrapling_mcp*"]
+
+[tool.setuptools.package-data]
+scrapling_mcp = ["baseline_catalog.json"]
