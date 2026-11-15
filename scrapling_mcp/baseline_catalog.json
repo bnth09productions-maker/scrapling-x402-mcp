@@ -1,0 +1,2248 @@
+[
+  {
+    "name": "list_datasets",
+    "title": "List datasets",
+    "description": "FREE. Returns every dataset for sale: id, title, category (crypto/DeFi token prices, volume, TVL and yields; e-commerce product prices and stock; custom scraped feeds), row count, field names, created_at (freshness), a few sample rows and the price in USDC (starter sets from $0.01, up to 100 rows $0.05, large sets max $4.99). JSON output.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "preview_dataset",
+    "title": "Preview a dataset",
+    "description": "FREE. Sample of a dataset before buying: up to 10 real rows from the dataset (never more than half of it), all field names, total row count, created_at timestamp and the exact USDC price buy_dataset will charge. JSON output.",
+    "required": [
+      "dataset_id"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "dataset_id": {
+        "type": "string",
+        "description": "Id from list_datasets."
+      }
+    }
+  },
+  {
+    "name": "scrape_url",
+    "title": "Scrape a URL (paid)",
+    "description": "PAID, $0.001-$0.025 USDC. Any web page as clean, LLM-ready Markdown (boilerplate stripped) for your agent's context, e.g. url=https://example.com. Fetches the URL live (typically 1-5 s; stealth tier longer) and returns clean Markdown, JSON-LD, HTML tables and links as JSON. Tiers: cached_intel $0.001 (recent cached copy), static_scrape $0.005 (live fetch, default for normal pages), stealth_browser $0.025 (headless browser for JavaScript or Cloudflare-protected pages). An unpaid call returns the exact x402 price.",
+    "required": [
+      "url"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "Page to scrape."
+      },
+      "tier": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "cached_intel",
+          "static_scrape",
+          "stealth_browser"
+        ],
+        "default": "auto"
+      },
+      "css_selector": {
+        "type": "string",
+        "description": "Optional CSS selector to scope extraction."
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "buy_dataset",
+    "title": "Buy a dataset (paid)",
+    "description": "PAID, $0.01-$4.99 USDC by size (shown in list_datasets). Every row of a dataset in one download, e.g. dataset_id=live_crypto_top500_markets (~155 coins, Chainlink on-chain prices). Formats: json, jsonl, csv or markdown. Live feeds refresh about every 30 min. An unpaid call returns the exact x402 price.",
+    "required": [
+      "dataset_id"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "dataset_id": {
+        "type": "string",
+        "description": "Id from list_datasets."
+      },
+      "format": {
+        "type": "string",
+        "enum": [
+          "json",
+          "jsonl",
+          "csv",
+          "markdown"
+        ],
+        "default": "json"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_feeds",
+    "title": "Live feed catalog (free)",
+    "description": "FREE. Catalog of every live feed, refreshed about every 30 min (crypto, DeFi, Polymarket, stocks, new pools, token risk) with row counts, freshness and full price, plus the paid single-lookup tools and their prices.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_crypto_top10",
+    "title": "Top 10 coins snapshot (free)",
+    "description": "FREE. Top 10 crypto prices: rank, USD price and 24h change from Chainlink on-chain feeds (snapshot refreshed about every 30 min). lookup_coin ($0.001) covers ~155 coins with 1h/7d/30d change and 24h high/low.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_defi_top_yields",
+    "title": "Top 5 DeFi yields (free)",
+    "description": "FREE. Top 5 DeFi yields across all chains ranked by risk-adjusted APY, with APY, TVL and risk level. lookup_yields ($0.002) filters by chain/token.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_regime",
+    "title": "Market regime teaser (free, delayed)",
+    "description": "FREE. Risk-on / risk-off regime label and 0-100 score, delayed at least 1 hour. regime_now ($0.02) gives the live score, why, drivers and components.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_ecom",
+    "title": "E-commerce price/stock index teaser (free)",
+    "description": "FREE. Stats for the e-commerce index of 180+ Shopify brand stores (stores, products, variants by category), last crawl time, sample price drops (delayed 24h) and deepest discounts on sale now. ecom_product ($0.01) looks up any product's live price and stock.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_staking_yields",
+    "title": "Top 3 staking / LST yields (free)",
+    "description": "FREE. Top 3 liquid-staking and yield-bearing stablecoin APYs (stETH, rETH, sUSDe...) from on-chain exchange-rate changes. staking_yields ($0.005) returns all 8 with TVL and exchange rates.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_funding",
+    "title": "BTC/ETH/SOL perp funding (free, delayed)",
+    "description": "FREE. Hyperliquid funding rate for BTC, ETH and SOL, delayed 15 min. perp_funding ($0.01) gives every coin live.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_stock_perps",
+    "title": "Top stock perps teaser (free, delayed)",
+    "description": "FREE. Top tradeXYZ (Hyperliquid HIP-3) equity perps: mark, 24h change, funding APR, OI, volume (delayed up to 15 min). stock_perps ($0.003) returns every HIP-3 stock perp with large trades.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "stock_perps",
+    "title": "Stock perpetual futures tracker ($0.003)",
+    "description": "PAID $0.003 USDC. Live equity/index/commodity perps on Hyperliquid HIP-3 builder DEXes (tradeXYZ xyz + peers): mark/oracle, 24h change, funding, open interest, 24h volume, large recent taker prints and whale net by symbol. Timed to CFTC Nov 2026 US stock-perp clearance. Params symbol, dex, limit, min_usd. Covered by pass_day/pass_month. No charge on failure.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "symbol": {
+        "type": "string",
+        "description": "Optional comma tickers, e.g. TSLA,NVDA"
+      },
+      "dex": {
+        "type": "string",
+        "description": "Optional builder DEX: xyz|flx|cash|km|mkts|io|para|vntl"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max markets"
+      },
+      "min_usd": {
+        "type": "number",
+        "description": "Min USD for large trades (default 1000)"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_hl_twaps",
+    "title": "Recent Hyperliquid TWAP fills (free, delayed)",
+    "description": "FREE. 3 recent Hyperliquid TWAP slice fills (delayed up to 15 min). Research data, not investment advice. hl_twaps ($0.005) returns a larger live sample from the official public info API.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_hl_spot",
+    "title": "Top Hyperliquid spot markets (free, delayed)",
+    "description": "FREE. Top 3 Hyperliquid spot markets by 24h volume (delayed up to 15 min). hl_spot ($0.003) returns the full book.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_hl_perps",
+    "title": "Top Hyperliquid perps (free, delayed)",
+    "description": "FREE. Top 3 canonical Hyperliquid perp markets by 24h volume (delayed up to 15 min). hl_perps ($0.003) returns the full book.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_hl_hip3",
+    "title": "Top HIP-3 builder-DEX perps (free, delayed)",
+    "description": "FREE. Top 3 HIP-3 builder-DEX perp markets by 24h volume (delayed up to 15 min). hl_hip3 ($0.005) returns every builder DEX; stock_perps is the equity cut with large trades.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_hl_launches",
+    "title": "Newest HIP-1 spot launches (free, delayed)",
+    "description": "FREE. 3 newest Hyperliquid HIP-1 spot token deploys (delayed up to 15 min). hl_launches ($0.01) returns a longer list.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "hl_twaps",
+    "title": "Live Hyperliquid TWAP slice fills ($0.005)",
+    "description": "PAID $0.005 USDC. Recent TWAP slice fills sampled from Hyperliquid's official public info API (recentTrades with a zero hash). Research data, not investment advice. Not a complete book of every open TWAP; use hl_twap for one wallet. Params coin, limit. Covered by pass_day/pass_month. No charge on failure.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "coin": {
+        "type": "string",
+        "description": "Optional coin filter, e.g. BTC or xyz:GOLD"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max fills (default 50, max 200)"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "hl_twap",
+    "title": "Wallet Hyperliquid TWAP history ($0.003)",
+    "description": "PAID $0.003 USDC. One wallet's TWAP history and recent slice fills from Hyperliquid's official public info API. Research data, not investment advice. Requires wallet. Covered by pass_day/pass_month. No charge on failure.",
+    "required": [
+      "wallet"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "wallet": {
+        "type": "string",
+        "description": "42-character 0x wallet address"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "hl_spot",
+    "title": "Hyperliquid spot markets ($0.003)",
+    "description": "PAID $0.003 USDC. Every Hyperliquid spot market: mark/mid, 24h change, volume and supply, from the official public info API. Research data, not investment advice. Params coin, limit. Covered by pass_day/pass_month. No charge on failure.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "coin": {
+        "type": "string",
+        "description": "Optional pair or token filter, e.g. HYPE or PURR/USDC"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max markets (default all, by 24h volume)"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "hl_perps",
+    "title": "Hyperliquid canonical perp markets ($0.003)",
+    "description": "PAID $0.003 USDC. Canonical Hyperliquid perp book (not HIP-3): mark, oracle, funding, open interest and volume. Research data, not investment advice. For builder DEXes use hl_hip3; for equity perps use stock_perps. Params coin, limit. Covered by pass_day/pass_month. No charge on failure.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "coin": {
+        "type": "string",
+        "description": "Optional coin filter, e.g. BTC,ETH"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max markets (default all, by 24h volume)"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "hl_hip3",
+    "title": "HIP-3 builder-DEX perp markets ($0.005)",
+    "description": "PAID $0.005 USDC. Every HIP-3 builder-DEX perp market (xyz, flx, vntl, hyna, km, abcd, cash, para, mkts, io, and any new ones) from Hyperliquid's official public info API. Research data, not investment advice. Does not replace stock_perps (equity cut + large trades). Params dex, coin, limit. Covered by pass_day/pass_month. No charge on failure.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "dex": {
+        "type": "string",
+        "description": "Optional builder DEX, e.g. xyz, flx, hyna, io"
+      },
+      "coin": {
+        "type": "string",
+        "description": "Optional market filter, e.g. TSLA or xyz:TSLA"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max markets (default all, by 24h volume)"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "hl_launches",
+    "title": "New HIP-1 spot token launches ($0.01)",
+    "description": "PAID $0.01 USDC. New Hyperliquid HIP-1 spot token deploys: deploy time, deployer, supply and mark, from the official public info API. Research data, not investment advice. Params days, limit. Covered by pass_day/pass_month. No charge on failure.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "days": {
+        "type": "integer",
+        "description": "Only deploys in the last N days"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max launches (default 50, max 200)"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "staking_yields",
+    "title": "Staking / LST yields ($0.005)",
+    "description": "PAID $0.005 USDC. APY (7-day on-chain exchange-rate change), TVL and exchange rate for stETH, rETH, cbETH, weETH, sfrxETH, sUSDe, sUSDS and sDAI. Optional token filter.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "token": {
+        "type": "string",
+        "description": "Optional symbol filter, e.g. rETH"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "pendle_fixed",
+    "title": "Pendle PT fixed APY ($0.01)",
+    "description": "PAID $0.01 USDC. Implied fixed APY, expiry, days left and PT price for every active Pendle market on Ethereum, Arbitrum and Base, read on-chain. Filter by chain, q (symbol search), min_days.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string"
+      },
+      "q": {
+        "type": "string"
+      },
+      "min_days": {
+        "type": "number"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "perp_funding",
+    "title": "Hyperliquid perp funding rates ($0.01)",
+    "description": "PAID $0.01 USDC. Live Hyperliquid funding (1h, 8h, APR), direction, premium, mark/oracle price, open interest and 24h volume. Optional coin filter and limit.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "coin": {
+        "type": "string"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_tokenized_stocks",
+    "title": "Top 10 tokenized stocks (free)",
+    "description": "FREE. Top 10 tokenized stocks (Ondo Global Markets, xStocks) by on-chain supply value with Chainlink oracle stock price and oracle_round {round_id, updated_at}; group_by=company groups by company with price_basis. tokenized_stocks ($0.005) adds every token, contract, DEX price and premium/discount.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "tokenized_stocks",
+    "title": "Tokenized stocks: supply, DEX vs oracle premium ($0.005)",
+    "description": "PAID $0.005 USDC. Every Ondo (Ethereum, BNB Chain) and xStocks (Solana) tokenized stock: contract, underlying ticker, on-chain supply, supply value, DEX price vs Chainlink oracle price, premium/discount %. Filters ticker, chain, issuer, limit.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "ticker": {
+        "type": "string",
+        "description": "e.g. TSLA"
+      },
+      "chain": {
+        "type": "string",
+        "description": "ethereum | bsc | solana"
+      },
+      "issuer": {
+        "type": "string",
+        "description": "ondo | xstocks"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_prices",
+    "title": "Up to 3 token prices, on-chain (free)",
+    "description": "FREE. Up to 3 token prices in USD (btc,eth,sol by default) from Chainlink oracles read on-chain, with feed, chain and block. prices ($0.003) takes up to 50 tokens.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "prices",
+    "title": "Bulk token prices, up to 50 per call ($0.003)",
+    "description": "PAID $0.003 USDC. Up to 50 crypto token prices in USD in one call from Chainlink Data Feeds read on-chain (Ethereum, Arbitrum, Base): price, feed address, chain, oracle update time, block number. Unknown symbols listed in not_found.",
+    "required": [
+      "tokens"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "tokens": {
+        "type": "string",
+        "description": "Comma-separated symbols, max 50, e.g. btc,eth,sol,link"
+      },
+      "vs": {
+        "type": "string",
+        "description": "usd"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_crypto_treasuries",
+    "title": "Top 10 public companies by crypto holdings (free)",
+    "description": "FREE. Top 10 SEC-reporting companies by crypto treasury value (corporate bitcoin holdings, ETH/SOL treasury companies, miners) from SEC filings. crypto_treasuries ($0.005) adds every company, cost basis, filing links and per-asset totals.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_etf_holdings",
+    "title": "US spot BTC/ETH/LTC ETF coin totals (free)",
+    "description": "FREE. Latest all-fund Bitcoin, Ethereum and Litecoin ETF coin totals plus top funds from official issuer holdings. etf_holdings and etf_flows ($0.005) add each fund's bought/sold, shares, missing-fund notes, and related corporate holders (Strategy, Strive) labeled as companies, not ETFs.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_country_btc_holdings",
+    "title": "Public country and government Bitcoin holdings (free)",
+    "description": "FREE. Official, on-chain and court-record Bitcoin holdings for countries and governments, with as-of dates, sources, method badges and a CSV download. Human page at /countries. Not investment advice.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "address_poisoning",
+    "title": "Base address-poisoning / lookalike-address check ($0.0009)",
+    "description": "PAID $0.0009 USDC. For one Base address: latest USDC transfers newest first (read from Base RPC logs, minutes fresh) with tx hash, block and time, and flags for lookalike senders/recipients that copy the first and last hex characters of a real counterparty (zero-value transferFrom spoofs, dust sends). Use before copying an address from wallet history.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "Base address 0x + 40 hex"
+      },
+      "hours": {
+        "type": "number",
+        "description": "look-back 0.25-24, default 6"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_binance_flows",
+    "title": "Binance withdrawal-restart net flows headline (free)",
+    "description": "FREE. Net USD outflow from Binance's publicly identified wallets over the last 1h and 24h, all chains and per chain (Ethereum, BSC, Base, Tron, Bitcoin), Chainlink-priced, with as-of time and block. Per chain check_1h/check_24h state (checked_ok, checked_ok_empty = real zero, not_checked = null total, error) with last_success_at/last_error_at; spread_ok/max_spread_seconds (limit = measured loop cycle + grace). BSC is 1h only. binance_flows ($0.02) adds per-asset detail; binance_flows_report ($0.25) adds biggest withdrawals and destinations.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "binance_flows",
+    "title": "Binance outflow snapshot per chain and asset ($0.02)",
+    "description": "PAID $0.02 USDC. Binance withdrawal-restart tracker: 1h and 24h inflow/outflow/net per chain (Ethereum, BSC, Base, Tron, Bitcoin) and per asset (USDT, USDC, WBTC/BTCB/BTC, ETH/WETH, native ETH/BNB/TRX) for Binance's publicly identified wallets (Binance's own published lists). USD via Chainlink with input timestamps; as-of time and block per chain; per-chain check states and spread_ok/max_spread_seconds.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "binance_flows_report",
+    "title": "Binance outflow report: biggest withdrawals and destinations ($0.25)",
+    "description": "PAID $0.25 USDC. Everything in binance_flows plus the biggest single withdrawals in 24h (tx hash, block, time, USD, recipient), destination labels where identifiable (other exchanges, bridges, else unlabeled), destination breakdown, hourly net-flow series and the tracked wallet list with sources.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "limit": {
+        "type": "integer",
+        "description": "biggest withdrawals to list, 1-100, default 25"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "pass_day",
+    "title": "24-hour catalog pass ($2)",
+    "description": "PAID $2 USDC once. Returns a pass_token (sdp_...) that unlocks every paid lookup priced up to $1/call for 24h (60 calls/min, 1500/UTC day). Pass it as api_key on later tool calls. Shown once.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "pass_month",
+    "title": "30-day catalog pass ($25)",
+    "description": "PAID $25 USDC once. Returns a pass_token (sdp_...) that unlocks every paid lookup priced up to $1/call for 30 days (60 calls/min, 2500/UTC day). Pass it as api_key on later tool calls. Shown once.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "alerts_subscribe_week",
+    "title": "Webhook alerts for 7 days ($5)",
+    "description": "PAID $5 USDC. Signed (HMAC-SHA256) webhook POSTs for hack-tracker attacker moves, Binance hourly net outflows and whale transfers into/out of Binance wallets, each with as-of time and block. Returns subscription_id, manage_token and signing_secret (shown once).",
+    "required": [
+      "webhook_url"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "webhook_url": {
+        "type": "string",
+        "description": "https URL that receives signed alert POSTs"
+      },
+      "topics": {
+        "type": "string",
+        "description": "comma list: hack, binance_flows, whale (default all)"
+      },
+      "min_usd": {
+        "type": "number",
+        "description": "minimum USD per alert (defaults: hack 100000, whale 1000000, binance_flows 50000000)"
+      },
+      "chains": {
+        "type": "string",
+        "description": "optional: ethereum,bsc,base,tron,bitcoin"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "alerts_subscribe_month",
+    "title": "Webhook alerts for 30 days ($15)",
+    "description": "PAID $15 USDC. Same as alerts_subscribe_week for 30 days.",
+    "required": [
+      "webhook_url"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "webhook_url": {
+        "type": "string",
+        "description": "https URL that receives signed alert POSTs"
+      },
+      "topics": {
+        "type": "string",
+        "description": "comma list: hack, binance_flows, whale (default all)"
+      },
+      "min_usd": {
+        "type": "number",
+        "description": "minimum USD per alert (defaults: hack 100000, whale 1000000, binance_flows 50000000)"
+      },
+      "chains": {
+        "type": "string",
+        "description": "optional: ethereum,bsc,base,tron,bitcoin"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_alerts_info",
+    "title": "How paid webhook alerts work (free)",
+    "description": "FREE. Alert topics, default thresholds, signature verification and the test/unsubscribe endpoints.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "crypto_treasuries",
+    "title": "Corporate crypto treasuries from SEC filings ($0.005)",
+    "description": "PAID $0.005 USDC. Every public company crypto reserve reported in SEC XBRL filings: company, ticker, CIK, asset, units held, fair value as filed, cost basis, as-of date, SEC filing link, live USD value (on-chain Chainlink price), totals per asset. Filters ticker, asset, limit.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "ticker": {
+        "type": "string",
+        "description": "e.g. MSTR,TSLA"
+      },
+      "asset": {
+        "type": "string",
+        "description": "BTC | ETH | SOL | ..."
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "etf_holdings",
+    "title": "US spot BTC/ETH/LTC ETF coin holdings ($0.005)",
+    "description": "PAID $0.005 USDC. Official issuer holdings for US spot Bitcoin, Ethereum and Litecoin ETFs (plus the Grayscale LTCN OTC trust, labeled as a trust not an ETF): ticker, product type, coins, shares, NAV, bought, sold, net change, AUM. Also all-fund totals, missing-fund notes, and related corporate holders (Strategy, Strive) clearly labeled as companies, not ETFs. Bought/sold is blank until two business days are saved. Filter asset=BTC|ETH|LTC or ticker.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "asset": {
+        "type": "string",
+        "description": "BTC | ETH | LTC"
+      },
+      "ticker": {
+        "type": "string",
+        "description": "e.g. IBIT,ETHA,LTCC"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "etf_flows",
+    "title": "Day-over-day coin bought/sold by US crypto ETFs ($0.005)",
+    "description": "PAID $0.005 USDC. Day-over-day coin bought and sold for each US spot Bitcoin, Ethereum and Litecoin ETF from official issuer holdings snapshots. Blank until two business days are saved. Filter asset=BTC|ETH|LTC or ticker.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "asset": {
+        "type": "string",
+        "description": "BTC | ETH | LTC"
+      },
+      "ticker": {
+        "type": "string",
+        "description": "e.g. IBIT,ETHA,LTCC"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_tokenized_real_estate",
+    "title": "Top 10 tokenized real estate tokens (free)",
+    "description": "FREE. Top 10 RWA property tokens (RealT RealTokens on Gnosis) by on-chain market cap: token, contract, city, state, on-chain price. tokenized_real_estate ($0.005) adds every property, supply, RMM collateral and filters.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "tokenized_real_estate",
+    "title": "Tokenized real estate live feed, on-chain ($0.005)",
+    "description": "PAID $0.005 USDC. Tokenized real estate / RWA property tokens (RealT RealTokens on Gnosis) read on-chain: token, platform, chain, contract, property address, city, state, country, total supply, on-chain price + price source, market cap, holders, 24h/30d on-chain YAM volume and trades, last trade, RMM collateral, as-of. Covers RMM collateral tokens plus all YAM-whitelisted RealTokens. Filters platform, chain, city, state, country, limit.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "platform": {
+        "type": "string",
+        "description": "RealT"
+      },
+      "chain": {
+        "type": "string",
+        "description": "Gnosis"
+      },
+      "city": {
+        "type": "string",
+        "description": "e.g. Detroit"
+      },
+      "state": {
+        "type": "string",
+        "description": "e.g. MI"
+      },
+      "country": {
+        "type": "string",
+        "description": "e.g. US"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "hack_tracker",
+    "title": "Hack tracker: Binance exploit stolen funds, attacker wallets ($0.03)",
+    "description": "PAID $0.03 USDC. Hack / exploit stolen-funds tracker (Binance hack Oct 2026, attributed to North Korea/Lazarus by TRM): every attacker + linked wallet with ETH/USDT/USDC/WETH holdings, frozen status, outbound transfers, Uniswap swaps, bridge/mixer use, exchange-inflow alerts, latest dumps, moved 1h/24h. Ethereum, Bitcoin, Tron; a failed chain is served as stale_last_good with stale {as_of, block, age_seconds}; spread_ok/max_spread_seconds per figure. On-chain, refreshed every 3 min.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "incident": {
+        "type": "string",
+        "description": "binance-2026"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_traders",
+    "title": "Top 3 Hyperliquid traders this week (free)",
+    "description": "FREE. Use when an agent wants a sample of top crypto traders. top_traders ($0.005) gives up to 200 ranked wallets; trader_wallet ($0.003) profiles any wallet.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "top_traders",
+    "title": "Top Hyperliquid traders by PnL/ROI ($0.005)",
+    "description": "PAID $0.005 USDC. Use when an agent asks who the most profitable crypto traders are or wants smart-money wallets to track/copy. Ranked from public Hyperliquid chain data (~47k accounts): address, PnL, ROI, volume, account value.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "venue": {
+        "type": "string"
+      },
+      "window": {
+        "type": "string",
+        "description": "day|week|month|allTime"
+      },
+      "sort": {
+        "type": "string",
+        "description": "pnl|roi|volume|worst"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "min_account": {
+        "type": "number"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "trader_wallet",
+    "title": "Hyperliquid wallet trader profile ($0.003)",
+    "description": "PAID $0.003 USDC. Use when an agent asks how good a wallet is as a trader or what a whale holds now: ranks, PnL per window, open positions, recent win rate.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "0x wallet"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_stream_status",
+    "title": "Free: majors/positions stream collector status",
+    "description": "FREE. Subscriber count, watchlist size, buffer. Delayed ~60s sampled majors SSE: GET /v1/free/stream/trades. Meme sample: GET /v1/free/stream/meme/trades (auto-closes; not MCP tools to avoid hanging). Live streams need a day/month pass or $0.05 / 15-min window at stream_window. Research only \u2014 not investment advice.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "trader_profile",
+    "title": "Multi-venue trader profile HL + GMX + dYdX ($0.01)",
+    "description": "PAID $0.01 USDC. Hyperliquid ranks/equity/open perps, GMX v2 on Arbitrum/Avalanche for 0x addresses, plus dYdX v4 when a dydx1 address is supplied. Public protocol data only. Informational research \u2014 not investment advice.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "0x Hyperliquid/EVM wallet or dydx1 address"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "trader_positions",
+    "title": "Open positions snapshot HL + GMX ($0.005)",
+    "description": "PAID $0.005 USDC. Open Hyperliquid and GMX v2 perps plus recent derived entry/exit events: side, size, entry, leverage, PnL. Research only \u2014 not investment advice.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "0x wallet"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "trader_history",
+    "title": "Fill history as entry/exit events, HL + GMX ($0.01)",
+    "description": "PAID $0.01 USDC. Hyperliquid userFills plus GMX v2 positionChanges, classified as open/increase/reduce/close with price, size, side, realized PnL. Research only \u2014 not investment advice.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "stream_window",
+    "title": "15-minute SSE stream window token ($0.05)",
+    "description": "PAID $0.05 USDC. Returns X-Stream-Token covering /v1/stream/trades, /v1/stream/positions, and /v1/stream/meme/trades for 15 minutes. Day ($2) and month ($25) passes already include these streams. No new card SKU. Research only.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_bot_sheet_sample",
+    "title": "Free: top 3 HL traders + Fear & Greed",
+    "description": "FREE teaser for trading bot analytics. Paid: bot_sheet $0.005, bots_top $0.005, trading_bots_daily $8.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "bot_sheet",
+    "title": "Trading bot/vault/agent sheet HL+Thirdfy ($0.005)",
+    "description": "PAID $0.005. Analytics sheet for a Hyperliquid wallet/vault or Thirdfy agent. Informational only \u2014 not investment advice.",
+    "required": [
+      "id"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "0x address or Thirdfy slug"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "bots_top",
+    "title": "Top HL traders + Thirdfy agents ($0.005)",
+    "description": "PAID $0.005. Ranked Hyperliquid traders by window PnL with optional Thirdfy join. Research ranking, not a buy list.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "window": {
+        "type": "string"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "include_thirdfy": {
+        "type": "boolean"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_odds_sample",
+    "title": "Free: Fear & Greed + 3 Polymarket questions",
+    "description": "FREE teaser. Paid odds_pulse $0.005, odds_movers $0.01, odds_hypothesis $0.03 (research snapshot NOT a trade call).",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "odds_pulse",
+    "title": "Odds research pulse + Fear & Greed ($0.005)",
+    "description": "PAID $0.005. Thin derived Polymarket matches for q= plus Fear & Greed. Informational only \u2014 not investment advice. No Kalshi.",
+    "required": [
+      "q"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "q": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "odds_movers",
+    "title": "Odds movers + Fear & Greed ($0.01)",
+    "description": "PAID $0.01. Polymarket public markets by 24h volume + FNG overlay. Not trade signals.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "odds_hypothesis",
+    "title": "Research hypothesis snapshot NOT a call ($0.03)",
+    "description": "PAID $0.03. Research card with market-implied probability + FNG. NOT a buy/sell recommendation; not personalized advice.",
+    "required": [
+      "q"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "q": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_postmortem_sample",
+    "title": "Free: 2 curated agent post-mortem rows",
+    "description": "FREE schema preview. Paid postmortems_search $0.01; agent_postmortems pack $12.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "postmortems_search",
+    "title": "Trading-agent post-mortem search ($0.01)",
+    "description": "PAID $0.01. Curated post-mortems with agent/sentiment/timing/model/risk + citations.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "q": {
+        "type": "string"
+      },
+      "model": {
+        "type": "string"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "bot_history",
+    "title": "Trading bot 7-day history ($0.01)",
+    "description": "Local HL/Thirdfy snapshots for id= plus live day/week/month windows. Informational only \u2014 not investment advice.",
+    "required": [
+      "id"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "days": {
+        "type": "integer",
+        "default": 7
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "odds_history",
+    "title": "Odds + Fear & Greed 7-day history ($0.01)",
+    "description": "Local Polymarket/Manifold snapshots + Alternative.me daily FNG. Research only \u2014 not trade signals.",
+    "required": [
+      "market"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "market": {
+        "type": "string"
+      },
+      "days": {
+        "type": "integer",
+        "default": 7
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_trading_history_status",
+    "title": "Free: history collector status + days available",
+    "description": "FREE status for trading_history under Collected_Data. Paid bot_history/odds_history $0.01.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "free_stocks",
+    "title": "AAPL/MSFT/NVDA revenue, net income, newest SEC filing (free)",
+    "description": "FREE. Use when an agent wants a sample of US stock data. stock_fundamentals ($0.005), stock_filings ($0.003), stock_insiders ($0.005) and stock_price ($0.001) cover any ticker.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "stock_fundamentals",
+    "title": "US stock fundamentals from SEC filings ($0.005)",
+    "description": "PAID $0.005 USDC. Use when an agent asks for a US company's revenue, net income, EPS, margins, cash, debt or shares outstanding. Latest annual + quarter + balance sheet from SEC EDGAR XBRL, ~10,000 tickers.",
+    "required": [
+      "ticker"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "ticker": {
+        "type": "string",
+        "description": "Ticker (AAPL, BRK-B) or SEC CIK"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "stock_filings",
+    "title": "Recent SEC filings with links ($0.003)",
+    "description": "PAID $0.003 USDC. Use when an agent asks what a company filed recently or wants the latest 10-K/10-Q/8-K link. Optional form filter (comma list) and limit.",
+    "required": [
+      "ticker"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "ticker": {
+        "type": "string"
+      },
+      "form": {
+        "type": "string"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "stock_insiders",
+    "title": "Insider buys/sells from SEC Form 4 ($0.005)",
+    "description": "PAID $0.005 USDC. Use when an agent asks whether insiders are buying or selling a stock. Parsed Form 4: insider, role, code, shares, price, value, 10b5-1 flag, buy/sell totals.",
+    "required": [
+      "ticker"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "ticker": {
+        "type": "string"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "open_market": {
+        "type": "boolean"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "stock_price",
+    "title": "On-chain stock/ETF price ($0.001)",
+    "description": "PAID $0.001 USDC. Use when an agent needs a current price for a major US stock or ETF (TSLA, NVDA, SPY...) from Chainlink oracle feeds read on-chain.",
+    "required": [
+      "ticker"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "ticker": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_meme_trending",
+    "title": "Top 3 trending meme coins per chain (free, delayed)",
+    "description": "FREE. Use when an agent asks what meme coins are trending on Base, BNB Chain or Solana pump.fun. Top 3 per chain, 30-min delay. meme_trending ($0.005) is live with risk verdicts.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "meme_trending",
+    "title": "Trending meme coins + risk verdict ($0.005)",
+    "description": "PAID $0.005 USDC. Use when an agent asks what meme coins are trending/pumping on Base, BNB Chain (bsc) or Solana pump.fun. Ranked by volume x spike: price, change, buys/sells, liquidity, pool age, go/caution/avoid verdict. From on-chain swap logs.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "base",
+          "bsc",
+          "solana"
+        ]
+      },
+      "window": {
+        "type": "string",
+        "enum": [
+          "15m",
+          "1h",
+          "4h",
+          "24h"
+        ]
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "min_liquidity": {
+        "type": "number"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "pumpfun_feed",
+    "title": "Pump.fun launches and graduations ($0.005)",
+    "description": "PAID $0.005 USDC. Use when an agent asks what just launched on pump.fun, which coins are about to graduate, or what graduated to PumpSwap. Mint, symbol, creator, age, bonding-curve progress, SOL in curve.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "kind": {
+        "type": "string",
+        "enum": [
+          "launches",
+          "near-graduation",
+          "graduations"
+        ]
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "min_progress": {
+        "type": "number"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "meme_new_pools",
+    "title": "New DEX pools on BNB Chain / Base ($0.005)",
+    "description": "PAID $0.005 USDC. Use when an agent asks what tokens just launched or got a new PancakeSwap/Uniswap/Aerodrome pool on BNB Chain or Base. Pool, DEX, token, quote, exact creation time, volume/liquidity since launch.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "bsc",
+          "base"
+        ]
+      },
+      "hours": {
+        "type": "number"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "meme_history",
+    "title": "Small/meme token price + volume history ($0.01)",
+    "description": "PAID $0.01 USDC. Use when an agent needs a price/volume chart or back-data for a small-cap or meme token on Base, BNB Chain or pump.fun. ~15-min snapshots kept 30 days with high/low/change summary.",
+    "required": [
+      "token"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "base",
+          "bsc",
+          "solana"
+        ]
+      },
+      "token": {
+        "type": "string"
+      },
+      "hours": {
+        "type": "number"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "meme_trader",
+    "title": "Meme wallet profile from observed DEX/pump.fun prints ($0.005)",
+    "description": "PAID $0.005 USDC. Tokens bought/sold on Solana pump.fun and Base/BNB DEX swaps we observed, estimated cost basis and unrealized PnL only on those size-floored prints. Not a full explorer. Research only \u2014 not investment advice.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "0x EVM wallet or Solana pubkey"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_stream_meme_status",
+    "title": "Free: meme-stream collector status",
+    "description": "FREE. Meme-stream subscribers, buffer, USD size floor. Delayed sample SSE: GET /v1/free/stream/meme/trades (auto-closes; not an MCP tool). Live meme stream needs a day/month pass or $0.05 window.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "ecom_product",
+    "title": "E-commerce product price + stock lookup ($0.01)",
+    "description": "PAID $0.01 USDC. Search 180+ Shopify brand stores by product name or SKU: current price, compare-at price, discount %, in-stock flag, URL, image and a daily 30-day price/stock history. Optional domain filter. No match returns an error with no charge.",
+    "required": [
+      "q"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "q": {
+        "type": "string",
+        "description": "Product name, keyword or SKU"
+      },
+      "domain": {
+        "type": "string",
+        "description": "Optional store domain filter"
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max variants (1-50)"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "ecom_changes",
+    "title": "E-commerce price drops & restocks ($0.02)",
+    "description": "PAID $0.02 USDC. Price drops, price rises, restocks, sell-outs, new products and removals detected between daily crawls of 180+ Shopify stores. Filter by type (comma list), domain, category, brand, days (1-30), limit.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "type": {
+        "type": "string",
+        "description": "price_drop,price_rise,restock,sellout,new_product,removed"
+      },
+      "domain": {
+        "type": "string"
+      },
+      "category": {
+        "type": "string"
+      },
+      "brand": {
+        "type": "string"
+      },
+      "days": {
+        "type": "integer"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "ecom_snapshot",
+    "title": "E-commerce brand/category/store snapshot ($0.05)",
+    "description": "PAID $0.05 USDC. For a store domain, brand or category: product and variant counts, in-stock %, avg/median/min/max price, share on sale, top product types and brands, deepest live discounts, newest products, 7-day change counts.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "domain": {
+        "type": "string"
+      },
+      "brand": {
+        "type": "string"
+      },
+      "category": {
+        "type": "string",
+        "description": "apparel, beauty, electronics, supplements, home, outdoor, jewelry, pets, toys"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "ecom_catalog",
+    "title": "E-commerce full store catalog ($0.25)",
+    "description": "PAID $0.25 USDC. Every current product variant of one Shopify store in the index with price, compare-at price, stock flag, SKU, tags, URL and image. Store list is free at /v1/free/ecom/stores.",
+    "required": [
+      "domain"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "domain": {
+        "type": "string",
+        "description": "Store domain"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_coin",
+    "title": "Coin price lookup ($0.001)",
+    "description": "PAID $0.001 USDC. Current BTC, ETH and ~155 major coin prices from Chainlink on-chain feeds: USD price, 1h/24h/7d/30d change and 24h high/low (no market cap or volume). Examples: q=btc, q=ethereum. Refreshed about every 30 min, answers in under 100 ms. Unknown coin returns an error with no charge.",
+    "required": [
+      "q"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "q": {
+        "type": "string",
+        "description": "Symbol (btc), coin id (bitcoin) or name"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_protocol",
+    "title": "DeFi protocol TVL lookup ($0.001)",
+    "description": "PAID $0.001 USDC. DeFi protocol TVL in USD from our own on-chain reads, per-chain TVL, category and chains (1d/7d change once history builds). Examples: q=aave, q=uniswap. Refreshed about every 30 min.",
+    "required": [
+      "q"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "q": {
+        "type": "string",
+        "description": "Protocol slug or name, e.g. aave-v3"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_yields",
+    "title": "Best yields for chain/token ($0.002)",
+    "description": "PAID $0.002 USDC. Best USDC yield on Base (or any chain/token): top 10 pools ranked by risk-adjusted APY with APY, TVL and 0-100 risk score. Example: chain=Base, token=USDC. Takes chain, token or both. Refreshed about every 30 min.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "description": "e.g. Base, Ethereum, Arbitrum"
+      },
+      "token": {
+        "type": "string",
+        "description": "e.g. USDC, ETH"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_pool",
+    "title": "Yield pool lookup ($0.001)",
+    "description": "PAID $0.001 USDC. One on-chain DeFi lending pool (Aave v3/Compound v3/Moonwell/Morpho Blue) by pool id protocol:chain:token_address, e.g. aave-v3:base:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913: supply/borrow APY, utilization, TVL, impermanent-loss risk and risk score. Refreshed about every 30 min.",
+    "required": [
+      "pool_id"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "pool_id": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_polymarket",
+    "title": "Polymarket odds search ($0.005)",
+    "description": "PAID $0.005 USDC. Polymarket odds for an event: up to 10 markets matching a keyword with YES probability, 1h/24h/7d odds change, volume and liquidity. Examples: q=bitcoin, q=election. Refreshed about every 30 min.",
+    "required": [
+      "q"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "q": {
+        "type": "string",
+        "description": "Keyword(s) in the market question"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_token_risk",
+    "title": "Base token scam check ($0.005)",
+    "description": "PAID $0.005 USDC. Base token scam check: verdict go / caution / avoid, honeypot / cannot-sell, mintable, buy/sell tax and a 0-100 risk score. No charge if the scan fails. Example: address=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913. Cached scan, else live on-chain scan with swap simulation (about 3-8 s).",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "0x... Base token contract"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_tx",
+    "title": "Transaction + receipt ($0.003)",
+    "description": "PAID $0.003 USDC. Transaction and receipt in one call: from, to, value, status, gas used, and ERC-20 Transfer logs. Pass hash=0x... and optional chain= (ethereum, base, or all).",
+    "required": [
+      "hash"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "hash": {
+        "type": "string",
+        "description": "0x + 64 hex transaction hash"
+      },
+      "chain": {
+        "type": "string",
+        "description": "ethereum|base|arbitrum|polygon|optimism|bsc|avalanche|all"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_token_info",
+    "title": "Token/contract info ($0.002)",
+    "description": "PAID $0.002 USDC. Name, symbol, decimals, totalSupply, ERC-20/721/1155 classification, and proxy implementation if it is a proxy. Requires address= and a single chain= (default ethereum).",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "0x token or contract address"
+      },
+      "chain": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_evm_gas",
+    "title": "Live EVM gas + block height ($0.001)",
+    "description": "PAID $0.001 USDC. Chain id, block height, gas price, base fee and head age on one chain or all 7 (Base, Ethereum, Arbitrum, BSC, Polygon, Optimism, Avalanche).",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "description": "all or a chain name"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_allowance",
+    "title": "ERC-20 allowance ($0.001)",
+    "description": "PAID $0.001 USDC. How much of a token a spender is approved to move from an owner. Requires contract, owner and spender; optional chain= (default ethereum).",
+    "required": [
+      "contract",
+      "owner",
+      "spender"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "contract": {
+        "type": "string"
+      },
+      "owner": {
+        "type": "string"
+      },
+      "spender": {
+        "type": "string"
+      },
+      "chain": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "lookup_nft",
+    "title": "NFT owner + metadata ($0.005)",
+    "description": "PAID $0.005 USDC. Owner and resolved metadata for one ERC-721/1155 token_id. Requires contract and token_id; optional chain= (default ethereum).",
+    "required": [
+      "contract",
+      "token_id"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "contract": {
+        "type": "string"
+      },
+      "token_id": {
+        "type": "string"
+      },
+      "chain": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_datasets",
+    "title": "Dataset listings catalog (free)",
+    "description": "FREE. Catalog of the paid dataset listings (on-chain crypto prices, on-chain protocol TVL, live DEX pool volume leaders, live DeFi heatmap, live DEX volume) with price, row count and last update time.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {}
+  },
+  {
+    "name": "get_dataset",
+    "title": "Dataset listing rows ($0.002)",
+    "description": "PAID $0.002 USDC per call. Rows from one dataset listing: coingecko-markets (route id kept; ~155 Chainlink on-chain prices), defillama-protocols (our on-chain TVL), live volume-leaders, live market-heatmap, live dex-volume. Optional q keyword filter, limit (1-1000), offset, format json or csv.",
+    "required": [
+      "dataset"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "dataset": {
+        "type": "string",
+        "enum": [
+          "coingecko-markets",
+          "defillama-protocols",
+          "volume-leaders",
+          "market-heatmap",
+          "dex-volume"
+        ]
+      },
+      "q": {
+        "type": "string"
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000
+      },
+      "offset": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "format": {
+        "type": "string",
+        "enum": [
+          "json",
+          "csv"
+        ]
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "market_pulse",
+    "title": "Whole-market bundle ($0.001)",
+    "description": "PAID $0.001 USDC. Whole crypto market in one call: top 10 coins by rank (Chainlink prices), top volume leaders, top DeFi protocols by TVL, DEX volume leaders and total, and DeFi heatmap highlights (biggest sectors, 1d gainers and losers). No parameters. No charge if sources are unavailable.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "price_moves",
+    "title": "Price move alerts ($0.002)",
+    "description": "PAID $0.002 USDC. Coins (~155 Chainlink-priced) whose price moved more than threshold % (default 5) over 1h and/or 24h, biggest first, plus DeFi protocols whose TVL moved more than threshold in 1d. Built for polling. Empty list is a valid answer.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "threshold": {
+        "type": "number"
+      },
+      "window": {
+        "type": "string",
+        "enum": [
+          "1h",
+          "24h",
+          "both"
+        ]
+      },
+      "include_defi": {
+        "type": "boolean"
+      },
+      "direction": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down",
+          "both"
+        ]
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "defi_intel",
+    "title": "DeFi intel bundle ($0.001)",
+    "description": "PAID $0.001 USDC. One call: top 10 DeFi protocols by TVL, 1d TVL gainers/losers, top chains by TVL, top stablecoins with supply change, top 10 risk-ranked yields. No parameters.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "ad_cost_benchmarks",
+    "title": "Ad cost benchmarks ($0.002)",
+    "description": "PAID $0.002 USDC. CPM, CPC, CTR by ad platform (meta, google_search, google_display, tiktok, linkedin) and industry, each figure with source report, URL and as-of date. Optional platform, industry, metric.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "platform": {
+        "type": "string"
+      },
+      "industry": {
+        "type": "string"
+      },
+      "metric": {
+        "type": "string",
+        "enum": [
+          "cpm",
+          "cpc",
+          "ctr"
+        ]
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "ping",
+    "title": "Payment test ($0.001)",
+    "description": "PAID $0.001 USDC. Cheapest paid call to confirm your x402 payment works: returns ok, server time and catalog links. No parameters.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "whale_moves",
+    "title": "Whale moves ($0.005)",
+    "description": "PAID $0.005 USDC. Large taker orders (default >= $100k) on Hyperliquid perps (top 40 markets) in the last window with side, USD size, price, taker address, plus net whale buy/sell per coin. Built for polling.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "min_usd": {
+        "type": "number"
+      },
+      "window": {
+        "type": "string",
+        "enum": [
+          "15m",
+          "1h",
+          "4h",
+          "24h",
+          "7d"
+        ]
+      },
+      "coin": {
+        "type": "string"
+      },
+      "side": {
+        "type": "string",
+        "enum": [
+          "buy",
+          "sell"
+        ]
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "whale_netflow",
+    "title": "Whale exchange netflow signal ($0.02)",
+    "description": "PAID $0.02 USDC. Whale transfers (>= $100k) on ethereum, base, arbitrum, polygon, solana classified by exchange wallet labels: EXCHANGE_INFLOW_BEARISH, WHALE_ACCUMULATION_BULLISH, INTERNAL_EXCHANGE_SHUFFLE, UNLABELED, with per-token inflow/outflow/net USD and signal, plus Hyperliquid whale perp taker flow.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "all",
+          "ethereum",
+          "base",
+          "arbitrum",
+          "polygon",
+          "solana",
+          "hyperliquid"
+        ]
+      },
+      "token": {
+        "type": "string"
+      },
+      "window": {
+        "type": "string",
+        "enum": [
+          "1h",
+          "24h",
+          "7d"
+        ]
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "whale_token",
+    "title": "Whale flow for one coin ($0.005)",
+    "description": "PAID $0.005 USDC. Whale orders and net whale buy/sell for one Hyperliquid coin (e.g. BTC, SOL, HYPE) plus mark price, 24h change, funding and open interest.",
+    "required": [
+      "coin"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "coin": {
+        "type": "string"
+      },
+      "min_usd": {
+        "type": "number"
+      },
+      "window": {
+        "type": "string",
+        "enum": [
+          "15m",
+          "1h",
+          "4h",
+          "24h",
+          "7d"
+        ]
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "token_verdict",
+    "title": "Token verdict with facts ($0.005)",
+    "description": "PAID $0.005 USDC. go / caution / avoid verdict, 0-100 risk score and the facts behind it (liquidity, holders, top-10 concentration, LP locked, taxes, honeypot, mint/proxy/owner flags) for a token on base, ethereum, bsc, arbitrum, polygon, optimism, avalanche or solana. No charge if the scan fails.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string"
+      },
+      "address": {
+        "type": "string",
+        "description": "Contract or Solana mint"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "wallet_profile",
+    "title": "Wallet profile ($0.005)",
+    "description": "PAID $0.005 USDC. Who is this wallet: label exchange / whale / active_trader / fresh_wallet / dormant, 0-100 activity score with reasons, native + USDC balance, tx count, first/last activity, exchange label and whale transfer history. Chains ethereum, base, solana. Computed from raw chain RPC.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "ethereum",
+          "base",
+          "solana"
+        ]
+      },
+      "address": {
+        "type": "string",
+        "description": "Wallet address"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "regime_now",
+    "title": "Market regime now: risk-on or risk-off? ($0.02)",
+    "description": "PAID $0.02 USDC. Is the market risk-on or risk-off right now, and why: 0-100 composite score, regime label, confidence, macro vs crypto sub-scores, macro quadrant, Fed liquidity trend, plain-English why, top drivers, 9 component scores (Fed liquidity, rates/curve, growth/inflation, financial conditions, BTC trend, stablecoin supply, perp funding/OI, whale flow, DEX activity) and what changed since yesterday. No parameters.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "regime_full",
+    "title": "Market regime full report ($0.05)",
+    "description": "PAID $0.05 USDC. Everything in regime_now plus raw metrics for every component, 30-day score history, 7-day trend and full methodology (weights, thresholds, sources). No parameters.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "dd_report",
+    "title": "Crypto Due-Diligence Agent: full report ($1.00)",
+    "description": "PAID $1.00 USDC. Full due-diligence report on a token or wallet: executive verdict, red and green flags, DEX liquidity, holder concentration, 7-day whale moves/netflow, lending listings, counterparty check, recommendation (allow/caution/avoid) with confidence, data timestamps and explorer proof links. Deterministic; missing sections are marked. Chains base, ethereum, solana. No charge on failure.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "base",
+          "ethereum",
+          "solana"
+        ]
+      },
+      "address": {
+        "type": "string",
+        "description": "Token contract, Solana mint or wallet"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "dd_quick",
+    "title": "Crypto Due-Diligence quick check ($0.25)",
+    "description": "PAID $0.25 USDC. Quick due-diligence on a token or wallet: allow/caution/avoid with confidence, trust score, top 3 red flags, DEX liquidity and holder concentration. Chains base, ethereum, solana. No charge on failure.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "base",
+          "ethereum",
+          "solana"
+        ]
+      },
+      "address": {
+        "type": "string",
+        "description": "Token contract, Solana mint or wallet"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "trust_agent",
+    "title": "Trust Bundle: should I trust this agent? ($0.04)",
+    "description": "PAID $0.04 USDC. One call before you pay, trade with or let through an outside agent, wallet or token: allow / caution / block, a 0-100 trust score and plain-English reasons. Combines Counterparty Check, wallet profile and (for tokens) the token security verdict. Chains base, ethereum, solana. No charge on failure.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "base",
+          "ethereum",
+          "solana"
+        ]
+      },
+      "address": {
+        "type": "string",
+        "description": "Agent wallet, token contract or Solana mint"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "counterparty_check",
+    "title": "Counterparty Check ($0.004)",
+    "description": "PAID $0.004 USDC. Before paying or trading: send one wallet or token and get safe / caution / block, a 0-100 safety score and reasons. Auto-detects token vs wallet; combines token contract checks (impostor symbol, owner, proxy, Solana mint/freeze authority), holder concentration, wallet profile, whale history and spam filters. Chains ethereum, base, solana. No charge on failure.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "ethereum",
+          "base",
+          "solana"
+        ]
+      },
+      "address": {
+        "type": "string",
+        "description": "Wallet, token contract or Solana mint"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "intel_risk_check",
+    "title": "Security risk-check ($0.0045, 3 free/day)",
+    "description": "PAID $0.0045 USDC (3 free/IP/UTC-day). One wallet/contract \u2192 MALICIOUS/HIGH_RISK/WATCH/LOW_RISK/UNKNOWN verdict + 0-100 score from our ~57k labels (OFAC/sanctions/scam/exploit/mixer), live hack-tracker attribution and Base USDC poisoning flags. Covered by pass_day ($2) / pass_month ($25) (\u2264$1/call). Stolen-funds $12 is NOT covered by passes.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "Wallet or contract address"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "intel_risk_batch",
+    "title": "Batch security risk-check ($0.15 / up to 50)",
+    "description": "PAID $0.15 USDC. Risk-check up to 50 addresses in one call (~$0.003/ea). Same verdict fields as intel_risk_check (poisoning RPC skipped for speed).",
+    "required": [
+      "addresses"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "addresses": {
+        "type": "string",
+        "description": "Comma-separated addresses, max 50"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "stolen_funds_bundle",
+    "title": "Stolen-funds / scam / sanctions pack ($12)",
+    "description": "PAID $12 USDC. Download every labeled hacker/exploit, scam/phishing, sanctioned and mixer address plus live hack-tracker attributed wallets with as_of, freeze flags and SHA-256 checksum. Premium pay-per-download \u2014 NOT covered by day/month passes.",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "free_intel_risk_check",
+    "title": "Free risk-check teaser (3/day)",
+    "description": "FREE up to 3/IP/UTC-day. Requires address. Same engine as intel_risk_check ($0.0045); then HTTP 402 with per-call + day/month pass options. Passes cover risk-check/batch (\u2264$1/call); stolen-funds $12 is pay-per-download only.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "address": {
+        "type": "string",
+        "description": "Wallet or contract address to risk-check"
+      }
+    }
+  },
+  {
+    "name": "token_holders",
+    "title": "Solana token holder concentration ($0.001)",
+    "description": "PAID $0.001 USDC. Solana token holder concentration: top-10 share of supply, largest holder share, exchange-labelled holders and a low / medium / high verdict with reasons. Pass the mint as address.",
+    "required": [
+      "address"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "chain": {
+        "type": "string",
+        "enum": [
+          "solana"
+        ]
+      },
+      "address": {
+        "type": "string",
+        "description": "Solana token mint"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  },
+  {
+    "name": "scrape_text",
+    "title": "Page to clean text ($0.003)",
+    "description": "PAID $0.003 USDC. Any web page as clean, LLM-ready Markdown text with navigation, ads and boilerplate stripped: title, text and character count. Example: url=https://example.com. No charge if the page cannot be fetched.",
+    "required": [
+      "url"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "Page URL"
+      },
+      "api_key": {
+        "type": "string",
+        "description": "Optional prepaid key (sk_scrapling_...) or catalog pass token (sdp_..., from pass_day/pass_month). Otherwise pay per call with x402 via _meta['x402/payment']."
+      }
+    }
+  }
+]
