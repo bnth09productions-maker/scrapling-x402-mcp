@@ -1,0 +1,9 @@
+--- a/scrapling/monetize/upd25.py
++++ b/scrapling/monetize/upd25.py
+@@ -288,5 +288,5 @@
+ 
+     @app.get("/v1/check/counterparty", tags=["wallets"],
+-             summary="Counterparty Check: safe / caution / block verdict + 0-100 score for a wallet or token before you pay or trade ($0.004)")
++             summary="Counterparty Check: safe / caution / block verdict + 0-100 score for a wallet or token before you pay or trade ($0.002)")
+     async def counterparty_route(request: Request, chain: str = Query("ethereum"), address: Optional[str] = Query(None)):
+         if not address:

@@ -1,0 +1,40 @@
+{
+  "base_url": "https://scraplingdata.xyz",
+  "timeout_seconds": 15,
+  "max_bytes": 2000000,
+  "user_agent": "ScraplingHealthCheck/1.0 (+https://scraplingdata.xyz; internal monitor)",
+  "state_dir": "var/state",
+  "report_dir": "var/reports",
+  "log_dir": "var/logs",
+  "outbox_dir": "var/outbox",
+  "keep_reports": 48,
+  "interval_seconds": 14400,
+  "free_max_age_seconds": 7200,
+  "hacks_max_age_seconds": 1800,
+  "free": [
+    {"id": "binance-flows", "path": "/v1/free/binance-flows", "require_keys": ["as_of", "partial", "chains_partial"], "as_of_field": "as_of"},
+    {"id": "stock-perps", "path": "/v1/free/stock-perps.json", "require_keys": ["as_of", "count"], "require_list": "markets", "as_of_field": "as_of"},
+    {"id": "wallet-label", "path": "/v1/free/wallet-label?address=0x0000000000000000000000000000000000000000", "require_keys": ["last_confirmed", "category"], "equals": {"match": true, "category": "special"}, "as_of_field": "as_of", "max_age_seconds": 21600},
+    {"id": "feeds", "path": "/v1/free/feeds", "require_list": "feeds"},
+    {"id": "crypto-top10", "path": "/v1/free/crypto/top10"},
+    {"id": "defi-yields", "path": "/v1/free/defi/top-yields"}
+  ],
+  "paid_402": [
+    {"id": "market-pulse", "path": "/v1/bundle/market-pulse", "usd": 0.001},
+    {"id": "defi-intel", "path": "/v1/bundle/defi-intel", "usd": 0.001},
+    {"id": "address-poisoning", "path": "/v1/lookup/address-poisoning", "usd": 0.0009},
+    {"id": "counterparty", "path": "/v1/check/counterparty", "usd": 0.004},
+    {"id": "stock-perps", "path": "/v1/perps/stocks", "usd": 0.003},
+    {"id": "binance-flows", "path": "/v1/lookup/binance-flows", "usd": 0.02},
+    {"id": "binance-flows-report", "path": "/v1/lookup/binance-flows/report", "usd": 0.25},
+    {"id": "pass-day", "path": "/v1/pass/day", "usd": 2.0}
+  ],
+  "bad_signature": {"id": "market-pulse", "path": "/v1/bundle/market-pulse", "usd": 0.001},
+  "price_consistency": {"path": "/v1/bundle/market-pulse", "usd": 0.001},
+  "mpp": {"path": "/v1/bundle/market-pulse", "intents": ["charge", "session"]},
+  "local": {
+    "sync_evidence": {"path": null, "fresh_seconds": 1800, "known_gap_seconds": 21600},
+    "demand_radar": {"path": null, "fresh_seconds": 7200, "known_stall_max_age_seconds": 21600},
+    "request_log": {"path": null, "max_age_seconds": 21600, "max_5xx_24h": 50}
+  }
+}

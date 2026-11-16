@@ -1,0 +1,16 @@
+Isolated run, 2026-11-07. Directory contained only apply_counterparty_price.py and test_counterparty_price.py. PYTHONPATH was not pointed at the store repo. No network. No host files were patched.
+
+python3 -m unittest test_counterparty_price.py -v
+9 tests, OK:
+
+test_atomic_usdc_is_2000
+test_invalid_payment_is_not_a_settled_success
+test_late_anchor_failure_leaves_every_file_unchanged
+test_mixed_state_aborts_without_writes
+test_mpp_amount_string_matches_bridge_formula
+test_patch_preserves_newlines_mode_and_is_idempotent
+test_preflight_only_does_not_write
+test_replace_failure_restores_every_file
+test_staging_failure_and_cli_abort_leave_sources
+
+The late-anchor test removes the upd25 anchor and asserts every file's bytes match the preimage, including agent_api.py and mcp_server.py. The replace-failure test raises on the third os.replace and asserts the same byte match after restore. The suite does not import the gateway or pympp.

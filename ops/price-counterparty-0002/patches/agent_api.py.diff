@@ -1,0 +1,9 @@
+--- a/scrapling/monetize/agent_api.py
++++ b/scrapling/monetize/agent_api.py
+@@ -208,5 +208,5 @@
+     },
+     "counterparty-check": {
+-        "path": "/v1/check/counterparty", "price": 0.004,
++        "path": "/v1/check/counterparty", "price": 0.002,
+         "example_path": "/v1/check/counterparty?chain=ethereum&address=0x28C6c06298d514Db089934071355E5743bf21d60",
+         "desc": "Counterparty Check: before you pay or trade, send one wallet or token and get a safe / caution / block verdict, a 0-100 safety score and plain-English reasons. Auto-detects token vs wallet. Combines on-chain token contract checks (copycat/impostor symbol, owner, upgradeable proxy, Solana mint/freeze authority), holder concentration (Solana), wallet profile (exchange label, age, activity), the store's 30-day whale history and its spam/junk-token filter. Chains: ethereum, base, solana. Cached 10 min; no charge on bad input or RPC failure",

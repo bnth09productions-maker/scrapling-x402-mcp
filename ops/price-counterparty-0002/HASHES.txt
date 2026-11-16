@@ -1,0 +1,50 @@
+Counterparty check $0.004 -> $0.002. These hashes identify bytes. They are not a license to copy a whole file onto a host.
+
+Do not use the earlier zip sha256 19407c0f10e9d75438b2e04a8a6964088f80e5f0675a4ff552f34389c4b3871c.
+That apply script wrote earlier files before a later anchor abort. This script preflights all six anchors first.
+
+Route: GET /v1/check/counterparty
+Lookup key: counterparty-check
+Not a route: /v1/wallet/counterparty
+Left unchanged: intel risk-check $0.0045, trust bundle $0.04, wallet profile $0.005, wallet-label $0.002
+
+USDC atomic units (6 decimals, PaymentConfig.usdc_atomic_units):
+  0.002 -> "2000"
+  MPP amount string: "0.002"
+
+Branch gateway.py (this repo, after the OpenAPI alias and sample checks):
+  preimage  1d360fc0224d016b01ab54c7400d90fcf34b4d72d822038ca03c5418ce91dba9
+  postimage d570c8fb526200970941de781bad5f9903f92978e0a4a8340be1f0e90320d251
+  change    one x-guidance phrase, /v1/check/counterparty?chain=&address= $0.004 -> $0.002
+  patch     patches/gateway.py.diff
+  If the live file hash is not the preimage, do not apply this diff. Use apply_counterparty_price.py, which requires the phrase once and leaves every other byte alone. Abort if the phrase count is not 1.
+
+Box standby snapshot 2026-11-06, reference only. Live hosts can differ. The apply script was run against a copy of these files and the anchors matched once. Do not install these files as replacements.
+
+  agent_api.py
+    preimage  217a7c54424f45b57631ff07a6f2301e365a04e899641cf51ef06b0c086cd6b0
+    postimage 24b46c07d5e4a8cc70b54828a27de81f5661cb86d27d602d0865e36d6ed5105f
+    anchor    "path": "/v1/check/counterparty", "price": 0.004,
+  mcp_server.py
+    preimage  b64b90e61babe2bf311c8e49646b8fc103a3f889e050ed536e533e6fc1a46f72
+    postimage 1afc7392d91197dbfff63443c538808adf6020ca0a94c1c9ad36d30c17ca8310
+    anchors   Counterparty Check ($0.004)
+              PAID $0.004 USDC. Before paying or trading:
+  upd25.py
+    preimage  17cc097cfc6b294723baa4a3e73d726f044dc32b0cff604b1b31dd3c734db7af
+    postimage 83fa6f8beaba6199f314c9462eeeaee2092a38523bec9aed801e81f92c3ff4fb
+    anchor    before you pay or trade ($0.004)
+  skill_scrapling_data.md
+    preimage  5f2ac6479d622a30a13016ed8211da1562ac7deef3e7e71eadd50bece02e999c
+    postimage 1cf4bb8bc29c83d6e23e87a96211e2d61a36d056db029f2809a44a2f25595527
+    anchor    the /v1/check/counterparty table row ending $0.004
+  snapshot gateway.py
+    preimage  92d1ff4e2a6bd7fdbb63d5aeaf84f0b6591ddcb4b3e4be21bcb55201bfdf5e24
+    This is the old standby file from before the MPP and OpenAPI fixes. Do not restore it. There is no snapshot-gateway patch in this package.
+
+Generated from the lookup price, so they follow agent_api.py after a process reload and have no separate price literal for this SKU:
+  HTTP 402 priceUsd, x402 amount, MPP charge amount, /llms.txt table, /docs price, OpenAPI x-payment-info.amount
+
+Restart required after the files are patched, by the operator, on each host: the gateway process loads these modules at startup. Patch the PC host tree and the container in the same window so code.tgz does not put the old price back. Then box, then VPS. This package does not restart or deploy.
+
+Health checker stays at expected usd 0.004 until after this cutover. Do not reinstall it as part of this change. After the live 402 shows 0.002, change the one counterparty usd in the installed healthcheck.json from 0.004 to 0.002.

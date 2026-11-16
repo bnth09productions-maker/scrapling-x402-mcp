@@ -1,0 +1,9 @@
+python3 -m unittest test_link_compat.py
+4 tests, OK. No network.
+
+test_aliases_redirect_and_do_not_unlock_payment
+test_apply_preflight_is_atomic
+test_mcp_methods_protocol_and_oauth_shape
+test_trailing_dot_allowlist_and_dotted_identifiers
+
+Separate proof: apply_link_compat.py on a copy of gateway preimage 1d360fc0 and snapshot mcp_server.py b64b90e6. Anchors matched. Counterparty guidance remained $0.004. OAuth routes were not given a token endpoint.
