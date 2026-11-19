@@ -1,7 +1,7 @@
 [project]
 name = "scrapling-x402-mcp"
-version = "0.6.2"
-description = "Scrapling x402 Data Store MCP server: documented tools, same prices and payment flow."
+version = "0.6.4"
+description = "Scrapling Data MCP server: crypto funding, insider trades, GPU/RAM prices and more, paid per call with x402."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
