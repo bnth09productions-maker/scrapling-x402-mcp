@@ -1,3 +1,3 @@
-"""Scrapling x402 Data Store MCP server (documentation build)."""
+"""Scrapling Data MCP server (documentation build)."""
 
-__version__ = "0.6.2"
+__version__ = "0.6.4"
